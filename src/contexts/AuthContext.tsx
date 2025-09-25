@@ -158,7 +158,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password_hash: passwordHash,
         role: userData.role,
         nome: userData.nome,
-        email_lc: emailLower, // Campo calculado para busca case insensitive
       };
 
       // Campos específicos para mentores
