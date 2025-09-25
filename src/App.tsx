@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import BootGuard from "@/components/BootGuard";
+import BootSequence from "@/components/BootSequence";
 import DebugOverlay from "@/components/DebugOverlay";
 
 // Pages
@@ -18,11 +18,12 @@ import Grupos from "./pages/Grupos";
 import GrupoDetalhe from "./pages/GrupoDetalhe";
 import Sessoes from "./pages/Sessoes";
 import NotFound from "./pages/NotFound";
+import HealthDiagnostic from "./pages/HealthDiagnostic";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <BootGuard>
+  <BootSequence>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
@@ -39,6 +40,9 @@ const App = () => (
 
             {/* Página de login */}
             <Route path="/login" element={<Login />} />
+
+            {/* Página de diagnóstico */}
+            <Route path="/__health" element={<HealthDiagnostic />} />
 
             {/* Rotas protegidas para alunos */}
             <Route 
@@ -113,7 +117,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
-  </BootGuard>
+  </BootSequence>
 );
 
 // Componente helper para redirecionar baseado no role

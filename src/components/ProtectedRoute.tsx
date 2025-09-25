@@ -33,7 +33,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   if (requiredRole && user.role !== requiredRole) {
     // Redirecionar para a página apropriada baseada no role do usuário
     const redirectPath = user.role === 'aluno' ? '/home-aluno' : '/home-mentor';
-    return <Navigate to={redirectPath} replace />;
+    // Evitar redirect recursivo - só redirecionar se não estiver já na rota correta
+    if (location.pathname !== redirectPath) {
+      return <Navigate to={redirectPath} replace />;
+    }
   }
 
   return <>{children}</>;

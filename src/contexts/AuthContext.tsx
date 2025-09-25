@@ -126,7 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken('local');
       saveToStorage(user, 'local');
       
-      navigate(user.role === 'aluno' ? '/home-aluno' : '/home-mentor');
+      // Evitar redirect recursivo - só redirecionar se não estouver já na rota de destino
+      const targetPath = user.role === 'aluno' ? '/home-aluno' : '/home-mentor';
+      if (window.location.pathname !== targetPath) {
+        navigate(targetPath);
+      }
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível entrar.';
@@ -175,10 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // 4) sucesso: mensagem e redirect para login (SEM auto-login)
       toast({
-        title: "Cadastro realizado com sucesso! Faça login para continuar.",
-        description: "Sua conta foi criada. Use suas credenciais para acessar.",
+        title: "Cadastro realizado com sucesso!",
+        description: "Faça login para continuar.",
       });
       
+      // Navegar para login sem auto-login
       navigate('/login');
 
     } catch (error) {

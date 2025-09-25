@@ -32,16 +32,27 @@ async function fetchJson(path: string, init?: RequestInit) {
       headers: { ...HEADERS, ...init?.headers } 
     });
     
-    const data = await response.json().catch(() => null);
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      console.error('Erro ao parsear JSON da resposta:', jsonError);
+      data = null;
+    }
     
     if (!response.ok) {
-      console.error('Airtable error:', response.status, data);
-      throw new Error(data?.error?.message || `HTTP ${response.status}`);
+      console.error(`Airtable error ${response.status}:`, data);
+      const errorMessage = data?.error?.message || 
+                          data?.error || 
+                          `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errorMessage);
     }
     
     return data;
   } catch (error) {
-    console.error('Fetch error:', error);
+    if (error instanceof Error && error.message.includes('fetch')) {
+      throw new Error('Erro de conexão: Verifique sua internet e configurações do Airtable');
+    }
     throw error;
   }
 }
@@ -127,12 +138,16 @@ class AirtableClient {
   }
 }
 
-// Helper único para criação no Airtable - retorna um único record
+// Helper único para criação no Airtable - retorna um único record (não array)
 export async function createRecord(table: string, fields: any) {
-  return fetchJson(encodeURIComponent(table), {
+  const response = await fetchJson(`${encodeURIComponent(table)}`, {
     method: 'POST',
     body: JSON.stringify({ fields })
   });
+  
+  // Airtable POST retorna: { id, fields, createdTime } - um único record
+  // Não { records: [...] }
+  return response;
 }
 
 // Nova API mais robusta
