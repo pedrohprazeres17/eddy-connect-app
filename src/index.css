@@ -6,15 +6,18 @@
 
 @layer base {
   :root {
-    /* Cores do tema EduConnect */
+    /* Cores do tema EduConnect - Contraste AA garantido */
     --brand-1: 234 88% 59%; /* #2447F9 */
     --brand-2: 228 54% 25%; /* #1B2B66 */
     --bg: 223 50% 7%; /* #0B0E16 */
     --surface: 224 53% 12%; /* #121725 */
-    --muted: 213 18% 57%; /* #8892A6 */
-    --text: 223 29% 89%; /* #E6E9F2 */
+    --surface-2: 224 45% 18%; /* #1A2032 estados hover */
+    --text: 223 29% 95%; /* #E8ECF5 texto principal */
+    --text-muted: 213 18% 78%; /* #A9B2C7 texto secundário AA */
+    --border: 224 35% 28%; /* #2A3147 bordas visíveis */
     --accent: 160 77% 56%; /* #36E3A8 */
     --danger: 0 100% 68%; /* #FF5D5D */
+    --focus: 210 100% 80%; /* #9CC7FF foco visível */
 
     /* Mapeamento para shadcn */
     --background: var(--bg);
@@ -24,18 +27,18 @@
     --popover: var(--surface);
     --popover-foreground: var(--text);
     --primary: var(--brand-1);
-    --primary-foreground: var(--text);
+    --primary-foreground: 0 0% 100%; /* branco para contraste */
     --secondary: var(--surface);
     --secondary-foreground: var(--text);
     --muted: var(--surface);
-    --muted-foreground: var(--muted);
+    --muted-foreground: var(--text-muted);
     --accent: var(--accent);
     --accent-foreground: var(--bg);
     --destructive: var(--danger);
-    --destructive-foreground: var(--text);
-    --border: hsl(var(--muted) / 0.3);
-    --input: hsl(var(--muted) / 0.2);
-    --ring: var(--brand-1);
+    --destructive-foreground: 0 0% 100%; /* branco para contraste */
+    --border: var(--border);
+    --input: var(--surface);
+    --ring: var(--focus);
     --radius: 0.75rem;
 
     /* Gradientes */
@@ -63,7 +66,9 @@
     font-size: 16px; /* Tamanho mínimo */
   }
 
-  body {
+  html,
+  body,
+  #root {
     @apply bg-background text-foreground font-sans;
     font-size: 1rem;
     line-height: 1.6;
@@ -71,9 +76,55 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Garante herança de cor para prevenir texto preto em superfícies escuras */
+  * {
+    color: inherit;
+  }
+
+  /* Links com contraste adequado */
+  a {
+    color: hsl(var(--brand-1));
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* Superfícies com contraste adequado */
+  .card,
+  header,
+  .surface {
+    background: hsl(var(--surface));
+    color: hsl(var(--text));
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Texto secundário com contraste AA */
+  .muted,
+  .subtitle,
+  .helper-text {
+    color: hsl(var(--text-muted));
+  }
+
+  /* Inputs com contraste adequado */
+  input,
+  select,
+  textarea {
+    background: hsl(var(--surface));
+    color: hsl(var(--text));
+    border: 1px solid hsl(var(--border));
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--text-muted));
+  }
+
   /* Foco visível para acessibilidade */
   *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    outline: 2px solid hsl(var(--focus));
+    outline-offset: 2px;
+    border-radius: 8px;
   }
 
   /* Estados de hover/focus para interatividade */

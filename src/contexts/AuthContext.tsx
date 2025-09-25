@@ -172,15 +172,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (userData.foto_url) fields.foto_url = userData.foto_url;
       }
 
-      // Criar usuário
-      const newUser = await airtableClient.create(USERS_TABLE, fields);
+      // Criar usuário no Airtable
+      const newUserRecord = await airtableClient.create(USERS_TABLE, fields);
 
-      // Fazer login automaticamente
-      await login(userData.email, userData.password);
+      // Criar objeto de usuário completo
+      const newUser: User = {
+        id: newUserRecord.id,
+        record_id: newUserRecord.fields.record_id || newUserRecord.id,
+        email: newUserRecord.fields.email,
+        nome: newUserRecord.fields.nome,
+        role: newUserRecord.fields.role,
+        foto_url: newUserRecord.fields.foto_url,
+        areas: newUserRecord.fields.areas || [],
+        preco_hora: newUserRecord.fields.preco_hora,
+        bio: newUserRecord.fields.bio,
+      };
+
+      // Gerar token e fazer login automaticamente
+      const authToken = `auth_${newUserRecord.id}_${Date.now()}`;
+      
+      setUser(newUser);
+      setToken(authToken);
+      saveToStorage(newUser, authToken);
 
       toast({
         title: "Conta criada com sucesso!",
-        description: "Você já está logado e pode começar a usar o EduConnect.",
+        description: `Bem-vindo, ${newUser.nome}! Você já está logado.`,
       });
 
     } catch (error) {
