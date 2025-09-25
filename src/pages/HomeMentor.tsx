@@ -257,13 +257,6 @@ export default function HomeMentor() {
                 <p className="text-sm text-muted-foreground">Grupos criados</p>
               </CardContent>
             </Card>
-            
-            <Card className="gradient-surface shadow-card text-center">
-              <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-primary mb-2">5.0</div>
-                <p className="text-sm text-muted-foreground">Avaliação média</p>
-              </CardContent>
-            </Card>
           </div>
         </section>
 

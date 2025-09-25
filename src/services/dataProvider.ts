@@ -1,4 +1,4 @@
-import { Mentor, AgendamentoInput, DataProvider, Grupo, CreateGrupoInput, EnterGrupoInput } from '@/types/mentor';
+import { Mentor, AgendamentoInput, DataProvider, Grupo, CreateGrupoInput } from '@/types/mentor';
 import { airtableClient } from './airtableClient';
 
 const USERS_TABLE = import.meta.env.VITE_AIRTABLE_USERS || 'Users';
@@ -192,38 +192,6 @@ class AirtableProvider implements DataProvider {
 
     } catch (error) {
       console.error('Erro ao criar grupo:', error);
-      return { ok: false };
-    }
-  }
-
-  async entrarNoGrupo(input: EnterGrupoInput, userId: string): Promise<{ ok: boolean }> {
-    try {
-      const grupos = await airtableClient.findByFilter(
-        GRUPOS_TABLE,
-        `OR({record_id} = '${input.grupoId}', RECORD_ID() = '${input.grupoId}')`
-      );
-
-      if (grupos.length === 0) {
-        throw new Error('Grupo não encontrado');
-      }
-
-      const grupo = grupos[0];
-      const membrosAtuais = grupo.fields.membros || [];
-
-      if (membrosAtuais.includes(userId)) {
-        return { ok: true };
-      }
-
-      const novosMembros = [...new Set([...membrosAtuais, userId])];
-
-      await airtableClient.update(GRUPOS_TABLE, grupo.id, {
-        membros: novosMembros
-      });
-
-      return { ok: true };
-
-    } catch (error) {
-      console.error('Erro ao entrar no grupo:', error);
       return { ok: false };
     }
   }

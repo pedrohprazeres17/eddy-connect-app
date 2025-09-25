@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Star, MapPin, Clock, ArrowLeft, Users, Award, BookOpen } from 'lucide-react';
+import { Calendar, MapPin, Clock, ArrowLeft, Users, Award, BookOpen } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { AgendarModal } from '@/components/AgendarModal';
 import { MentorPerfilSkeleton } from '@/components/Skeleton';
@@ -195,18 +195,13 @@ export default function MentorPerfil() {
                   </div>
                 )}
 
-                {/* Preço e avaliação */}
-                <div className="flex items-center justify-center gap-6 mb-6 text-lg">
+                {/* Preço */}
+                <div className="flex items-center justify-center mb-6 text-lg">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-accent" />
                     <span className="font-semibold text-accent">
                       {formatPrice(mentor.preco_hora)}/hora
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 fill-accent text-accent" />
-                    <span className="font-semibold">4.8</span>
-                    <span className="text-muted-foreground">(23)</span>
                   </div>
                 </div>
 
@@ -270,18 +265,6 @@ export default function MentorPerfil() {
                   <p className="text-sm text-muted-foreground">Horas de mentoria</p>
                 </CardContent>
               </Card>
-
-        <Card className="gradient-surface shadow-card text-center">
-          <CardContent className="pt-6">
-            <div className="flex justify-center mb-3">
-              <div className="p-3 bg-secondary/10 rounded-full">
-                <Award className="w-6 h-6 text-secondary-foreground" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-secondary-foreground mb-2">4.8</div>
-            <p className="text-sm text-muted-foreground">Avaliação média</p>
-          </CardContent>
-        </Card>
             </div>
           </section>
 

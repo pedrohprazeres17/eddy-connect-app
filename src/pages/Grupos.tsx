@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, UserPlus, Search, Users, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Search, Users, AlertCircle, RefreshCw } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { GroupCard } from '@/components/GroupCard';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
-import { JoinGroupModal } from '@/components/JoinGroupModal';
 import { GroupCardSkeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +49,6 @@ export default function Grupos() {
 
   // Modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
 
   // Debounce na busca
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -187,15 +185,6 @@ export default function Grupos() {
                 <Plus className="w-4 h-4" />
                 Criar Grupo
               </Button>
-
-              <Button
-                onClick={() => setJoinModalOpen(true)}
-                variant="outline"
-                className="gap-2"
-              >
-                <UserPlus className="w-4 h-4" />
-                Entrar por ID
-              </Button>
             </div>
           </div>
         </div>
@@ -205,16 +194,16 @@ export default function Grupos() {
           {/* Contador de resultados */}
           {!loading && !error && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {total === 0 
-                  ? "Você ainda não participa de nenhum grupo"
-                  : `${total} grupo${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}${
-                      debouncedSearch 
-                        ? ' com os filtros aplicados'
-                        : ''
-                    }`
-                }
-              </p>
+                <p className="text-sm text-muted-foreground">
+                  {total === 0 
+                    ? "Você ainda não participa de nenhum grupo"
+                    : `${total} grupo${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}${
+                        debouncedSearch 
+                          ? ' com os filtros aplicados'
+                          : ''
+                      }`
+                  }
+                </p>
               
               {grupos.length > 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -309,27 +298,19 @@ export default function Grupos() {
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   {debouncedSearch
                     ? "Não encontramos grupos com os termos buscados. Tente ajustar sua pesquisa."
-                    : "Que tal criar seu primeiro grupo de estudos ou entrar em um grupo existente?"
+                    : "Você ainda não participa de nenhum grupo. Crie um grupo para iniciar."
                   }
                 </p>
 
                 {!debouncedSearch ? (
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <div className="flex justify-center">
                     <Button 
                       onClick={() => setCreateModalOpen(true)}
                       className="gap-2"
                       variant="hero"
                     >
                       <Plus className="w-4 h-4" />
-                      Criar Meu Primeiro Grupo
-                    </Button>
-                    <Button 
-                      onClick={() => setJoinModalOpen(true)}
-                      variant="outline"
-                      className="gap-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Entrar em um Grupo
+                      Criar Grupo
                     </Button>
                   </div>
                 ) : (
@@ -350,11 +331,6 @@ export default function Grupos() {
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
-        />
-
-        <JoinGroupModal
-          isOpen={joinModalOpen}
-          onClose={() => setJoinModalOpen(false)}
         />
       </div>
     </AppShell>

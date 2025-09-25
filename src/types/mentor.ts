@@ -31,10 +31,6 @@ export interface CreateGrupoInput {
   descricao?: string;
 }
 
-export interface EnterGrupoInput {
-  grupoId: string;         // record_id do grupo (usar como "código")
-}
-
 export interface DataProvider {
   listMentores(params: {
     q?: string;
@@ -57,8 +53,6 @@ export interface DataProvider {
   }): Promise<{ items: Grupo[]; total: number }>;
 
   createGrupo(input: CreateGrupoInput, ownerUserId: string): Promise<{ ok: boolean; id?: string }>;
-
-  entrarNoGrupo(input: EnterGrupoInput, userId: string): Promise<{ ok: boolean }>;
 
   getGrupoById(id: string): Promise<Grupo | null>;
 }

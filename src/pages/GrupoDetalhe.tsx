@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Users, Crown, Calendar, MessageCircle, BookOpen, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, Crown, Calendar, MessageCircle, BookOpen } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { ChatBox } from '@/components/ChatBox';
 import { GroupDetailSkeleton } from '@/components/Skeleton';
@@ -26,7 +26,6 @@ export default function GrupoDetalhe() {
   const [grupo, setGrupo] = useState<Grupo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [joining, setJoining] = useState(false);
 
   const isOwner = user && grupo ? user.id === grupo.owner_user_id : false;
   const isMember = user && grupo ? grupo.membros.includes(user.id) : false;
@@ -74,42 +73,6 @@ export default function GrupoDetalhe() {
 
     fetchGrupo();
   }, [id, user]);
-
-  // Handler para entrar no grupo
-  const handleJoinGroup = async () => {
-    if (!user || !grupo) return;
-
-    try {
-      setJoining(true);
-
-      const result = await dataProvider.entrarNoGrupo({ grupoId: grupo.id }, user.id);
-
-      if (result.ok) {
-        // Atualizar estado local
-        setGrupo(prev => prev ? {
-          ...prev,
-          membros: [...prev.membros, user.id]
-        } : null);
-
-        toast({
-          title: "Você entrou no grupo!",
-          description: `Bem-vindo ao grupo "${grupo.nome}". Agora você pode participar das discussões.`,
-        });
-      } else {
-        throw new Error('Falha ao entrar no grupo');
-      }
-
-    } catch (error) {
-      console.error('Erro ao entrar no grupo:', error);
-      toast({
-        title: "Erro ao entrar no grupo",
-        description: "Não foi possível entrar no grupo. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setJoining(false);
-    }
-  };
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return '';
@@ -202,7 +165,7 @@ export default function GrupoDetalhe() {
               <Alert className="border-primary/20 bg-primary/5">
                 <Users className="h-4 w-4 text-primary" />
                 <AlertDescription>
-                  Você não participa deste grupo. Entre para acessar as discussões e conteúdos.
+                  Você não participa deste grupo. Para participar, entre em contato com o criador do grupo.
                 </AlertDescription>
               </Alert>
 
@@ -220,19 +183,11 @@ export default function GrupoDetalhe() {
               </div>
 
               <Button 
-                onClick={handleJoinGroup}
-                disabled={joining}
+                onClick={() => navigate('/grupos')}
                 className="w-full"
-                variant="hero"
+                variant="outline"
               >
-                {joining ? (
-                  <>Entrando...</>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Entrar no Grupo
-                  </>
-                )}
+                Voltar aos Grupos
               </Button>
             </CardContent>
           </Card>
@@ -320,9 +275,6 @@ export default function GrupoDetalhe() {
                       Copiar
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Compartilhe este ID para que outros possam entrar no grupo
-                  </p>
                 </div>
 
                 {/* Ações */}
