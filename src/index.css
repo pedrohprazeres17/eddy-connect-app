@@ -7,17 +7,17 @@
 @layer base {
   :root {
     /* Cores do tema EduConnect - Contraste AA garantido */
-    --brand-1: 234 88% 59%; /* #2447F9 */
-    --brand-2: 228 54% 25%; /* #1B2B66 */
-    --bg: 223 50% 7%; /* #0B0E16 */
-    --surface: 224 53% 12%; /* #121725 */
-    --surface-2: 224 45% 18%; /* #1A2032 estados hover */
-    --text: 223 29% 95%; /* #E8ECF5 texto principal */
-    --text-muted: 213 18% 78%; /* #A9B2C7 texto secundário AA */
-    --border: 224 35% 28%; /* #2A3147 bordas visíveis */
-    --accent: 160 77% 56%; /* #36E3A8 */
-    --danger: 0 100% 68%; /* #FF5D5D */
-    --focus: 210 100% 80%; /* #9CC7FF foco visível */
+    --brand-1: 234 88% 59%; /* #2447F9 - azul da marca */
+    --brand-2: 228 54% 25%; /* #1B2B66 - azul secundário */
+    --bg: 220 13% 9%; /* #141517 - fundo neutro escuro */
+    --surface: 220 13% 14%; /* #1F2023 - superfície neutra */
+    --surface-2: 220 13% 18%; /* #272A2E - hover neutro */
+    --text: 220 9% 95%; /* #F1F2F3 - texto principal */
+    --text-muted: 220 9% 70%; /* #A8ABB0 - texto secundário AA */
+    --border: 220 13% 25%; /* #373A40 - bordas neutras */
+    --accent: 160 77% 56%; /* #36E3A8 - verde destaque */
+    --danger: 0 100% 68%; /* #FF5D5D - vermelho alerta */
+    --focus: 210 100% 80%; /* #9CC7FF - foco azul */
 
     /* Mapeamento para shadcn */
     --background: var(--bg);
