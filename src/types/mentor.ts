@@ -45,7 +45,17 @@ export interface DataProvider {
 
   getMentorById(id: string): Promise<Mentor | null>;
 
-  createSessao(input: AgendamentoInput): Promise<{ ok: boolean; id?: string }>;
+  createSessao(input: { 
+    mentorAirRecId: string; 
+    alunoAirRecId: string; 
+    inicioISO: string; 
+    fimISO: string; 
+    observacoes?: string; 
+  }): Promise<{ ok: boolean; id?: string }>;
+
+  listMinhasSessoes(currentUser: { airRecId: string; role: 'aluno' | 'mentor' }, status?: string): Promise<{ items: any[]; total: number }>;
+
+  updateSessaoStatus(sessaoAirId: string, novoStatus: 'confirmada' | 'concluida' | 'cancelada'): Promise<{ ok: boolean }>;
 
   listGrupos(params?: { 
     q?: string; 
@@ -53,9 +63,9 @@ export interface DataProvider {
     offset?: string;
   }): Promise<{ items: Grupo[]; total: number; offset?: string }>;
 
-  createGrupo(input: CreateGrupoInput, ownerUserId: string): Promise<{ ok: boolean; id?: string }>;
+  createGrupo(input: CreateGrupoInput, currentUserAirRecId: string): Promise<{ ok: boolean; id?: string }>;
 
-  entrarNoGrupo(grupoAirtableId: string, currentUserRecId: string): Promise<{ ok: boolean }>;
+  entrarNoGrupo(grupoAirId: string, currentUserAirRecId: string): Promise<{ ok: boolean }>;
 
   getMeuMembership(grupo: any, currentUserRecId: string): Promise<{ 
     isMember: boolean; 

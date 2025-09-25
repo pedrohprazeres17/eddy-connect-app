@@ -94,7 +94,7 @@ export function ChatBox({ grupoId, grupoNome }: ChatBoxProps) {
       const message: LocalGroupMessage = {
         id: generateId(),
         grupoId,
-        userId: user.id,
+        userId: user.airRecId,
         userNome: user.nome,
         conteudo: messageText,
         createdAt: new Date().toISOString(),
@@ -223,7 +223,7 @@ export function ChatBox({ grupoId, grupoNome }: ChatBoxProps) {
 
                 {/* Mensagens do dia */}
                 {dayMessages.map((message) => {
-                  const isOwnMessage = message.userId === user?.id;
+                  const isOwnMessage = message.userId === user?.airRecId;
                   
                   return (
                     <div

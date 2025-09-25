@@ -135,7 +135,7 @@ export default function Grupos() {
     try {
       setJoiningGroupId(grupoAirtableId);
       
-      const result = await dataProvider.entrarNoGrupo(grupoAirtableId, user.record_id);
+      const result = await dataProvider.entrarNoGrupo(grupoAirtableId, user.airRecId);
       
       if (result.ok) {
         toast({
@@ -264,8 +264,8 @@ export default function Grupos() {
               {grupos.map((grupo) => {
                 if (!user) return null;
                 
-                const isOwner = grupo.owner_user_id === user.record_id;
-                const isMember = grupo.membros.includes(user.record_id);
+                const isOwner = grupo.owner_user_id === user.airRecId;
+                const isMember = grupo.membros.includes(user.airRecId);
                 const isJoining = joiningGroupId === (grupo.airtable_id || grupo.id);
                 
                 return (

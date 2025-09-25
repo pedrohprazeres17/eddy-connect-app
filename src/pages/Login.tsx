@@ -69,8 +69,7 @@ export default function Login() {
       if (from) {
         navigate(from, { replace: true });
       } else {
-        const redirectPath = user.role === 'aluno' ? '/home-aluno' : '/home-mentor';
-        navigate(redirectPath, { replace: true });
+        navigate(user.role === 'aluno' ? '/home-aluno' : '/home-mentor', { replace: true });
       }
     }
   }, [user, navigate, location.state]);

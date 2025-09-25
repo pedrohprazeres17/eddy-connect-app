@@ -27,8 +27,8 @@ export default function GrupoDetalhe() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isOwner = user && grupo ? user.id === grupo.owner_user_id : false;
-  const isMember = user && grupo ? grupo.membros.includes(user.id) : false;
+  const isOwner = user && grupo ? user.airRecId === grupo.owner_user_id : false;
+  const isMember = user && grupo ? grupo.membros.includes(user.airRecId) : false;
 
   // Verificar autenticação
   useEffect(() => {

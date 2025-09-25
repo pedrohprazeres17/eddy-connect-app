@@ -105,15 +105,21 @@ class AirtableProvider implements DataProvider {
     }
   }
 
-  async createSessao(input: AgendamentoInput): Promise<{ ok: boolean; id?: string }> {
+  async createSessao(input: { 
+    mentorAirRecId: string; 
+    alunoAirRecId: string; 
+    inicioISO: string; 
+    fimISO: string; 
+    observacoes?: string; 
+  }): Promise<{ ok: boolean; id?: string }> {
     try {
       const sessaoData = {
-        mentor: [input.mentorId],
-        aluno: [input.alunoId],
-        inicio: input.inicio,
-        fim: input.fim,
+        mentor: [input.mentorAirRecId],
+        aluno: [input.alunoAirRecId],
+        inicio: input.inicioISO,
+        fim: input.fimISO,
         status: 'solicitada',
-        observacoes: input.observacoes || '',
+        ...(input.observacoes ? { observacoes: input.observacoes } : {})
       };
 
       const response = await airtableClient.create(SESSOES_TABLE, sessaoData);
@@ -124,7 +130,45 @@ class AirtableProvider implements DataProvider {
       };
 
     } catch (error) {
-      console.error('Erro ao criar sessão:', error);
+      const err = error instanceof Error ? error.message : 'Falha na operação. Tente novamente.';
+      console.error('Airtable error:', err);
+      return { ok: false };
+    }
+  }
+
+  async listMinhasSessoes(currentUser: { airRecId: string; role: 'aluno' | 'mentor' }, status?: string): Promise<{ items: any[]; total: number }> {
+    try {
+      const isMentor = currentUser.role === 'mentor';
+      const linkField = isMentor ? 'mentor' : 'aluno';
+      
+      const parts = [`FIND("${currentUser.airRecId}", ARRAYJOIN(${linkField}))`];
+      if (status) parts.push(`{status}='${status}'`);
+      const formula = parts.length > 1 ? `AND(${parts.join(',')})` : parts[0];
+      
+      const response = await airtableClient.list(SESSOES_TABLE, { 
+        filterByFormula: formula, 
+        sort: [{ field: 'inicio', direction: 'asc' }], 
+        pageSize: 50 
+      });
+
+      return { 
+        items: response.records,
+        total: response.records.length 
+      };
+
+    } catch (error) {
+      console.error('Erro ao buscar sessões:', error);
+      throw error;
+    }
+  }
+
+  async updateSessaoStatus(sessaoAirId: string, novoStatus: 'confirmada' | 'concluida' | 'cancelada'): Promise<{ ok: boolean }> {
+    try {
+      await airtableClient.update(SESSOES_TABLE, sessaoAirId, { status: novoStatus });
+      return { ok: true };
+    } catch (error) {
+      const err = error instanceof Error ? error.message : 'Falha na operação. Tente novamente.';
+      console.error('Airtable error:', err);
       return { ok: false };
     }
   }
@@ -140,21 +184,17 @@ class AirtableProvider implements DataProvider {
       offset
     } = params || {};
 
-    // Construir filterByFormula para busca
-    let filterByFormula: string | undefined;
+    const queryParams: any = { 
+      pageSize, 
+      sort: [{ field: 'nome', direction: 'asc' }] 
+    };
     
-    if (q?.trim()) {
-      const searchTerm = q.toLowerCase().replace(/'/g, "\\'"); // Escape aspas
-      filterByFormula = `FIND('${searchTerm}', LOWER({nome} & ' ' & IF({descricao}, {descricao}, '')))`;
+    if (q) {
+      queryParams.filterByFormula = `FIND(LOWER("${q}"), LOWER({nome} & ' ' & IF({descricao},{descricao},'')))`;
     }
 
     try {
-      const response = await airtableClient.list(GRUPOS_TABLE, {
-        filterByFormula,
-        sort: [{ field: 'nome', direction: 'asc' }],
-        pageSize,
-        offset,
-      });
+      const response = await airtableClient.list(GRUPOS_TABLE, queryParams);
 
       const items: Grupo[] = response.records.map(record => ({
         id: record.fields.record_id || record.id,
@@ -178,14 +218,13 @@ class AirtableProvider implements DataProvider {
     }
   }
 
-  async createGrupo(input: CreateGrupoInput, ownerUserId: string): Promise<{ ok: boolean; id?: string }> {
+  async createGrupo(input: CreateGrupoInput, currentUserAirRecId: string): Promise<{ ok: boolean; id?: string }> {
     try {
       const grupoData = {
-        nome: input.nome.trim(),
-        descricao: input.descricao?.trim() || '',
-        owner_user: [ownerUserId],
-        membros: [ownerUserId],
-        criado_em: new Date().toISOString(),
+        nome: input.nome,
+        ...(input.descricao ? { descricao: input.descricao } : {}),
+        owner_user: [currentUserAirRecId], // recXXXX do usuário logado
+        membros: [currentUserAirRecId],
       };
 
       const response = await airtableClient.create(GRUPOS_TABLE, grupoData);
@@ -196,38 +235,32 @@ class AirtableProvider implements DataProvider {
       };
 
     } catch (error) {
-      console.error('Erro ao criar grupo:', error);
+      const err = error instanceof Error ? error.message : 'Falha na operação. Tente novamente.';
+      console.error('Airtable error:', err);
       return { ok: false };
     }
   }
 
-  async entrarNoGrupo(grupoAirtableId: string, currentUserRecId: string): Promise<{ ok: boolean }> {
+  async entrarNoGrupo(grupoAirId: string, currentUserAirRecId: string): Promise<{ ok: boolean }> {
     try {
-      // 1. Obter grupo atual para ler membros
-      const grupoRecord = await airtableClient.getByRecordId(GRUPOS_TABLE, grupoAirtableId);
+      const g = await airtableClient.getByRecordId(GRUPOS_TABLE, grupoAirId);
       
-      if (!grupoRecord) {
+      if (!g) {
         throw new Error('Grupo não encontrado');
       }
 
-      const membrosAtuais = grupoRecord.fields.membros || [];
-
-      // 2. Verificar se já é membro
-      if (membrosAtuais.includes(currentUserRecId)) {
-        return { ok: true }; // Já é membro
-      }
-
-      // 3. Adicionar usuário aos membros
-      const novosMembros = [...new Set([...membrosAtuais, currentUserRecId])];
-
-      await airtableClient.update(GRUPOS_TABLE, grupoRecord.id, {
-        membros: novosMembros
+      const membros = new Set((g.fields.membros || []).map((m: any) => m.id ?? m));
+      membros.add(currentUserAirRecId);
+      
+      await airtableClient.update(GRUPOS_TABLE, grupoAirId, { 
+        membros: Array.from(membros) 
       });
 
       return { ok: true };
 
     } catch (error) {
-      console.error('Erro ao entrar no grupo:', error);
+      const err = error instanceof Error ? error.message : 'Falha na operação. Tente novamente.';
+      console.error('Airtable error:', err);
       return { ok: false };
     }
   }

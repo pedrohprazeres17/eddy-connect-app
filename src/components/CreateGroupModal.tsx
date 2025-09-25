@@ -95,7 +95,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModa
         descricao: formData.descricao.trim() || undefined,
       };
 
-      const result = await dataProvider.createGrupo(createInput, user.record_id);
+      const result = await dataProvider.createGrupo(createInput, user.airRecId);
 
       if (result.ok) {
         toast({

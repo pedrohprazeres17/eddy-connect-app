@@ -128,11 +128,19 @@ export function AgendarModal({ isOpen, onClose, mentor }: AgendarModalProps) {
       const duracaoMinutos = parseInt(formData.duracao);
       const fimDate = addMinutes(inicioDate, duracaoMinutos);
 
-      const agendamentoInput: AgendamentoInput = {
-        mentorId: mentor.id,
-        alunoId: user.id,
-        inicio: formatISO(inicioDate),
-        fim: formatISO(fimDate),
+      // Função para converter data+hora para ISO UTC
+      function toIso(date: string, time: string): string {
+        const [y, m, d] = date.split('-').map(Number);
+        const [hh, mm] = time.split(':').map(Number);
+        const dt = new Date(y, m - 1, d, hh, mm, 0);
+        return dt.toISOString();
+      }
+
+      const agendamentoInput = {
+        mentorAirRecId: mentor.id,
+        alunoAirRecId: user.airRecId,
+        inicioISO: formatISO(inicioDate),
+        fimISO: formatISO(fimDate),
         observacoes: formData.observacoes.trim() || undefined,
       };
 
@@ -141,7 +149,7 @@ export function AgendarModal({ isOpen, onClose, mentor }: AgendarModalProps) {
       if (result.ok) {
         toast({
           title: "Solicitação enviada!",
-          description: `Sua solicitação de mentoria com ${mentor.nome} foi enviada. Você receberá uma confirmação em breve.`,
+          description: `Sua solicitação de mentoria com ${mentor.nome} foi enviada. Ver em Minhas Sessões.`,
         });
         onClose();
       } else {
