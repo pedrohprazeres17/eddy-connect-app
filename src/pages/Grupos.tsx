@@ -64,16 +64,12 @@ export default function Grupos() {
     }
   }, [user, navigate, toast]);
 
-  // Função para buscar grupos
-  const fetchGrupos = useCallback(async (resetList: boolean = false) => {
+  // Função para buscar grupos  
+  const refetch = useCallback(async () => {
     if (!user) return;
-
+    
+    setLoading(true);
     try {
-      if (resetList) {
-        setLoading(true);
-        setError(null);
-      }
-
       const response = await dataProvider.listGrupos({
         q: debouncedSearch,
         pageSize: 50, // Buscar mais grupos por vez
@@ -92,12 +88,17 @@ export default function Grupos() {
     }
   }, [user, debouncedSearch]);
 
+  // Função para buscar grupos (compatibilidade)
+  const fetchGrupos = useCallback(async (resetList: boolean = false) => {
+    await refetch();
+  }, [refetch]);
+
   // Carregar grupos quando usuário ou busca mudar
   useEffect(() => {
     if (user) {
-      fetchGrupos(true);
+      refetch();
     }
-  }, [user, debouncedSearch, fetchGrupos]);
+  }, [user, debouncedSearch, refetch]);
 
   // Handler para retry em caso de erro
   const handleRetry = () => {
@@ -346,6 +347,7 @@ export default function Grupos() {
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
+          gruposRefetch={refetch}
         />
       </div>
     </AppShell>

@@ -1,5 +1,5 @@
 import { Mentor, AgendamentoInput, DataProvider, Grupo, CreateGrupoInput } from '@/types/mentor';
-import { airtableClient } from './airtableClient';
+import { airtableClient, airtableCreate } from './airtableClient';
 
 const USERS_TABLE = import.meta.env.VITE_AIRTABLE_USERS || 'Users';
 const SESSOES_TABLE = import.meta.env.VITE_AIRTABLE_SESSOES || 'Sessoes';
@@ -219,26 +219,17 @@ class AirtableProvider implements DataProvider {
   }
 
   async createGrupo(input: CreateGrupoInput, currentUserAirRecId: string): Promise<{ ok: boolean; id?: string }> {
-    try {
-      const grupoData = {
-        nome: input.nome,
-        ...(input.descricao ? { descricao: input.descricao } : {}),
-        owner_user: [currentUserAirRecId], // recXXXX do usuário logado
-        membros: [currentUserAirRecId],
-      };
-
-      const response = await airtableClient.create(GRUPOS_TABLE, grupoData);
-      
-      return { 
-        ok: true, 
-        id: response.fields.record_id || response.id 
-      };
-
-    } catch (error) {
-      const err = error instanceof Error ? error.message : 'Falha na operação. Tente novamente.';
-      console.error('Airtable error:', err);
-      return { ok: false };
-    }
+    const response = await airtableCreate(GRUPOS_TABLE, {
+      nome: input.nome,
+      ...(input.descricao ? { descricao: input.descricao } : {}),
+      owner_user: [currentUserAirRecId], // recXXXX do usuário logado
+      membros: [currentUserAirRecId],
+    });
+    
+    return { 
+      ok: true, 
+      id: response.fields?.record_id || response.id 
+    };
   }
 
   async entrarNoGrupo(grupoAirId: string, currentUserAirRecId: string): Promise<{ ok: boolean }> {

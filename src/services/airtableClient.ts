@@ -115,5 +115,28 @@ class AirtableClient {
   }
 }
 
+// Helper único para criação no Airtable
+async function airtableCreate(table: string, fields: any) {
+  const r = await fetch(`${BASE_URL}/${encodeURIComponent(table)}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields }),
+  });
+  
+  const data = await r.json().catch(() => null); // ler UMA vez
+  
+  if (!r.ok) {
+    console.error('Airtable create error:', data || r.statusText);
+    throw new Error(data?.error?.message || 'Falha ao criar registro');
+  }
+  
+  // shape esperado: { id, fields, createdTime }
+  return data;
+}
+
 export const airtableClient = new AirtableClient();
+export { airtableCreate };
 export type { AirtableRecord, AirtableResponse, ListParams };

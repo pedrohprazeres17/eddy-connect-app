@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Users, FileText, X } from 'lucide-react';
 import {
   Dialog,
@@ -22,6 +23,7 @@ interface CreateGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void; // Callback para recarregar a lista
+  gruposRefetch?: () => void; // Função para refetch da lista
 }
 
 interface FormData {
@@ -31,10 +33,11 @@ interface FormData {
 
 const dataProvider = getDataProvider();
 
-export function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModalProps) {
+export function CreateGroupModal({ isOpen, onClose, onSuccess, gruposRefetch }: CreateGroupModalProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<FormData>({
@@ -85,38 +88,43 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm() || !user) return;
+    if (!validateForm()) return;
+    
+    if (!user?.airRecId) { 
+      navigate('/login'); 
+      return; 
+    }
 
+    setSubmitting(true);
+    
     try {
-      setLoading(true);
-
       const createInput: CreateGrupoInput = {
         nome: formData.nome.trim(),
         descricao: formData.descricao.trim() || undefined,
       };
 
       const result = await dataProvider.createGrupo(createInput, user.airRecId);
-
-      if (result.ok) {
-        toast({
-          title: "Grupo criado com sucesso!",
-          description: `O grupo "${formData.nome}" foi criado. Você pode convidar outros membros compartilhando o ID do grupo.`,
-        });
-        onClose();
-        onSuccess(); // Recarregar lista de grupos
-      } else {
-        throw new Error('Falha ao criar grupo');
-      }
-
-    } catch (error) {
-      console.error('Erro ao criar grupo:', error);
+      
+      // sucesso garantido se não lançou erro
+      toast({
+        title: "Grupo criado com sucesso!",
+        description: `O grupo "${formData.nome}" foi criado. Você pode convidar outros membros compartilhando o ID do grupo.`,
+      });
+      
+      onClose(); // fecha modal
+      gruposRefetch?.(); // opcional: disparar um refetch via contexto/estado
+      navigate('/grupos'); // voltar para a lista
+      
+    } catch (err: any) {
+      // só cai aqui se r.ok != true
+      console.error('Erro ao criar grupo:', err);
       toast({
         title: "Erro ao criar grupo",
-        description: "Não foi possível criar o grupo. Tente novamente.",
+        description: err?.message || 'Não foi possível criar o grupo.',
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -226,7 +234,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModa
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={loading}
+              disabled={submitting}
               className="sm:flex-1"
             >
               Cancelar
@@ -234,11 +242,11 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModa
             <Button
               type="submit"
               variant="hero"
-              disabled={loading}
+              disabled={submitting}
               className="sm:flex-1"
-              aria-busy={loading}
+              aria-busy={submitting}
             >
-              {loading ? (
+              {submitting ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
                   Criando...
