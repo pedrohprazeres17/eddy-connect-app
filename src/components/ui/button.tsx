@@ -15,6 +15,10 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Variantes customizadas do EduConnect usando o design system
+        hero: "gradient-brand text-primary-foreground hover:opacity-90 shadow-brand hover:shadow-glow",
+        accent: "gradient-accent text-accent-foreground hover:opacity-90",
+        surface: "gradient-surface text-foreground border border-border/50 hover:border-border",
       },
       size: {
         default: "h-10 px-4 py-2",

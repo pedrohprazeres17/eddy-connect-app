@@ -1,73 +1,176 @@
-# Welcome to your Lovable project
+# EduConnect - Plataforma de Mentoria
 
-## Project info
+Um SPA (Single Page Application) moderno e acessível que conecta alunos e mentores para aprendizado colaborativo.
 
-**URL**: https://lovable.dev/projects/95dcc24e-465d-4eab-8d08-00e11c14226a
+## 🚀 Características
 
-## How can I edit this code?
+- **Design System Personalizado**: Tema escuro com alto contraste e foco na acessibilidade
+- **Autenticação Completa**: Sistema de login/cadastro com diferentes roles (aluno/mentor)
+- **Integração Airtable**: Backend completo usando Airtable REST API
+- **Responsivo**: Interface adaptativa para desktop e mobile
+- **Acessível**: Implementa WCAG 2.1 com foco visível, ARIA labels e navegação por teclado
+- **TypeScript**: Tipagem completa para maior confiabilidade
 
-There are several ways of editing your application.
+## 🎨 Design System
 
-**Use Lovable**
+### Cores do Tema
+- **Brand Primary**: `#2447F9` - Azul principal da marca
+- **Brand Secondary**: `#1B2B66` - Azul escuro secundário  
+- **Background**: `#0B0E16` - Fundo principal escuro
+- **Surface**: `#121725` - Superfícies elevadas
+- **Text**: `#E6E9F2` - Texto principal claro
+- **Accent**: `#36E3A8` - Verde de destaque
+- **Danger**: `#FF5D5D` - Vermelho para alertas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/95dcc24e-465d-4eab-8d08-00e11c14226a) and start prompting.
+### Componentes Customizados
+- Gradientes definidos no design system
+- Sombras com glow effects
+- Animações suaves e transições
+- Skeletons com shimmer effect
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🔧 Configuração
 
-**Use your preferred IDE**
+### Variáveis de Ambiente Necessárias
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Crie um arquivo `.env.local` na raiz do projeto:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```env
+VITE_AIRTABLE_API_KEY=your_airtable_api_key
+VITE_AIRTABLE_BASE_ID=your_base_id
+VITE_AIRTABLE_USERS=Users
+VITE_AIRTABLE_GRUPOS=Grupos
+VITE_AIRTABLE_SESSOES=Sessoes
 ```
 
-**Edit a file directly in GitHub**
+### Esquema Airtable
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+#### Tabela Users
+- `email` (E-mail, primary key)
+- `password_hash` (Single line text)
+- `role` (Single select: aluno, mentor)
+- `nome` (Single line text)
+- `areas` (Multiple select)
+- `preco_hora` (Currency)
+- `bio` (Long text)
+- `foto_url` (URL)
+- `created_at` (Created time)
+- `record_id` (Formula: RECORD_ID())
+- `email_lc` (Formula: LOWER(email))
 
-**Use GitHub Codespaces**
+#### Tabela Grupos
+- `nome` (Single line text)
+- `descricao` (Long text)
+- `owner_user` (Link to Users)
+- `membros` (Link to Users, múltiplos)
+- `criado_em` (Created time)
+- `record_id` (Formula: RECORD_ID())
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+#### Tabela Sessoes
+- `id` (Auto number, primary)
+- `mentor` (Link to Users)
+- `aluno` (Link to Users)
+- `inicio` (Date & time)
+- `fim` (Date & time)
+- `status` (Single select: solicitada, confirmada, concluida, cancelada)
+- `observacoes` (Long text)
+- `criado_em` (Created time)
+- `record_id` (Formula: RECORD_ID())
 
-## What technologies are used for this project?
+## 🏗️ Arquitetura
 
-This project is built with:
+### Estrutura de Pastas
+```
+src/
+├── components/           # Componentes reutilizáveis
+│   ├── ui/              # Componentes shadcn customizados
+│   ├── Header.tsx       # Cabeçalho com navegação
+│   ├── ProtectedRoute.tsx # Roteamento protegido
+│   └── ...
+├── contexts/            # Contextos React
+│   └── AuthContext.tsx  # Gerenciamento de autenticação
+├── pages/               # Páginas da aplicação
+│   ├── Login.tsx        # Login/Cadastro
+│   ├── HomeAluno.tsx    # Dashboard do aluno
+│   ├── HomeMentor.tsx   # Dashboard do mentor
+│   └── ...
+├── services/            # Serviços e APIs
+│   └── airtableClient.ts # Cliente HTTP para Airtable
+├── utils/               # Utilitários
+│   ├── crypto.ts        # Funções de hash SHA-256
+│   └── smokeTests.ts    # Testes de funcionalidade
+└── hooks/               # Custom hooks
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Roteamento
+- `/login` - Página de autenticação
+- `/home-aluno` - Dashboard para alunos
+- `/home-mentor` - Dashboard para mentores
+- `/mentores` - Listagem de mentores (em breve)
+- `/grupos` - Grupos de estudo (em breve)
+- `/sessoes` - Sessões de mentoria (em breve)
 
-## How can I deploy this project?
+## 🔐 Segurança
 
-Simply open [Lovable](https://lovable.dev/projects/95dcc24e-465d-4eab-8d08-00e11c14226a) and click on Share -> Publish.
+- **Hash de Senhas**: SHA-256 client-side antes de enviar para API
+- **Autenticação Persistente**: localStorage com limpeza automática
+- **Roteamento Protegido**: Verificação de role em todas as rotas
+- **Validação de Entrada**: Validação client-side em todos os formulários
+- **Case Insensitive**: E-mails normalizados para lowercase
 
-## Can I connect a custom domain to my Lovable project?
+## 🧪 Testes
 
-Yes, you can!
+Execute os testes de funcionalidade no console do navegador:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```javascript
+import { runSmokeTests } from './src/utils/smokeTests';
+runSmokeTests();
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Testa:
+- Hash e verificação de senhas
+- Normalização de e-mails
+- Variáveis de ambiente
+- Funcionalidades críticas
+
+## 🎯 Funcionalidades Implementadas
+
+### ✅ Completas
+- Sistema de autenticação (login/cadastro)
+- Diferentes roles (aluno/mentor)
+- Dashboard personalizado por role
+- Integração completa com Airtable
+- Design system responsivo
+- Navegação acessível
+- Validação de formulários
+
+### 🚧 Em Desenvolvimento
+- Listagem e busca de mentores
+- Sistema de grupos de estudo
+- Agendamento de sessões
+- Chat entre usuários
+- Sistema de avaliações
+- Notificações
+
+## 🚀 Deploy
+
+1. Configure as variáveis de ambiente no seu provedor
+2. Build o projeto: `npm run build`
+3. Deploy os arquivos da pasta `dist`
+
+## 📱 Responsividade
+
+- Mobile First design
+- Breakpoints otimizados
+- Menu hamburguer em mobile
+- Touch-friendly interfaces
+- Testes em dispositivos reais
+
+## ♿ Acessibilidade
+
+- WCAG 2.1 AA compliant
+- Navegação por teclado completa
+- Screen reader friendly
+- Alto contraste (4.5:1 mínimo)
+- Focus visível em todos os elementos
+- ARIA labels apropriados
+- Semântica HTML correta
