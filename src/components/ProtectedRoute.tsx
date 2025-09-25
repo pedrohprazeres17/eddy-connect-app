@@ -25,18 +25,15 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   // Redirecionar para login se não estiver autenticado
-  if (!user && location.pathname !== '/login') {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Verificar se o role é o requerido (se especificado)
   if (requiredRole && user.role !== requiredRole) {
     // Redirecionar para a página apropriada baseada no role do usuário
     const redirectPath = user.role === 'aluno' ? '/home-aluno' : '/home-mentor';
-    // Evitar redirect recursivo - só redirecionar se não estiver já na rota correta
-    if (location.pathname !== redirectPath) {
-      return <Navigate to={redirectPath} replace />;
-    }
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <>{children}</>;

@@ -42,14 +42,6 @@ export default function Login() {
   const location = useLocation();
 
   const [activeTab, setActiveTab] = useState('login');
-
-  // URL parameter para determinar tab inicial
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get('tab') === 'signup') {
-      setActiveTab('signup');
-    }
-  }, [location.search]);
   const [showPassword, setShowPassword] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -171,20 +163,6 @@ export default function Login() {
       }
 
       await signup(signupData);
-      
-      // Resetar formulário após sucesso e mudar para tab de login
-      setSignupForm({
-        nome: '',
-        email: '',
-        password: '',
-        role: 'aluno',
-        areas: [],
-        preco_hora: '',
-        bio: '',
-        foto_url: ''
-      });
-      setActiveTab('login');
-      
     } catch (error) {
       // Erro já tratado no contexto com toast
     } finally {

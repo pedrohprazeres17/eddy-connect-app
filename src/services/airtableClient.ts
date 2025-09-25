@@ -1,10 +1,6 @@
 const API_KEY = import.meta.env.VITE_AIRTABLE_API_KEY;
 const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
-const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}/`;
-const HEADERS = { 
-  'Authorization': `Bearer ${API_KEY}`, 
-  'Content-Type': 'application/json' 
-};
+const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}`;
 
 interface AirtableRecord {
   id: string;
@@ -25,38 +21,6 @@ interface ListParams {
   offset?: string;
 }
 
-async function fetchJson(path: string, init?: RequestInit) {
-  try {
-    const response = await fetch(BASE_URL + path, { 
-      ...init, 
-      headers: { ...HEADERS, ...init?.headers } 
-    });
-    
-    let data;
-    try {
-      data = await response.json();
-    } catch (jsonError) {
-      console.error('Erro ao parsear JSON da resposta:', jsonError);
-      data = null;
-    }
-    
-    if (!response.ok) {
-      console.error(`Airtable error ${response.status}:`, data);
-      const errorMessage = data?.error?.message || 
-                          data?.error || 
-                          `HTTP ${response.status}: ${response.statusText}`;
-      throw new Error(errorMessage);
-    }
-    
-    return data;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('fetch')) {
-      throw new Error('Erro de conexão: Verifique sua internet e configurações do Airtable');
-    }
-    throw error;
-  }
-}
-
 class AirtableClient {
   private headers = {
     'Authorization': `Bearer ${API_KEY}`,
@@ -64,7 +28,20 @@ class AirtableClient {
   };
 
   private async request<T>(url: string, options?: RequestInit): Promise<T> {
-    return fetchJson(url, options);
+    const response = await fetch(`${BASE_URL}${url}`, {
+      ...options,
+      headers: {
+        ...this.headers,
+        ...options?.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error?.message || error.error || 'Erro na requisição');
+    }
+
+    return response.json();
   }
 
   async list(table: string, params: ListParams = {}): Promise<AirtableResponse> {
@@ -138,44 +115,28 @@ class AirtableClient {
   }
 }
 
-// Helper único para criação no Airtable - retorna um único record (não array)
-export async function createRecord(table: string, fields: any) {
-  const response = await fetchJson(`${encodeURIComponent(table)}`, {
+// Helper único para criação no Airtable
+async function airtableCreate(table: string, fields: any) {
+  const r = await fetch(`${BASE_URL}/${encodeURIComponent(table)}`, {
     method: 'POST',
-    body: JSON.stringify({ fields })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields }),
   });
   
-  // Airtable POST retorna: { id, fields, createdTime } - um único record
-  // Não { records: [...] }
-  return response;
+  const data = await r.json().catch(() => null); // ler UMA vez
+  
+  if (!r.ok) {
+    console.error('Airtable create error:', data || r.statusText);
+    throw new Error(data?.error?.message || 'Falha ao criar registro');
+  }
+  
+  // shape esperado: { id, fields, createdTime }
+  return data;
 }
 
-// Nova API mais robusta
-export const airtable = {
-  list: (table: string, params: any = {}) => {
-    const q = new URLSearchParams();
-    if (params.view) q.set('view', params.view);
-    if (params.filterByFormula) q.set('filterByFormula', params.filterByFormula);
-    if (params.pageSize) q.set('pageSize', String(params.pageSize));
-    if (params.sort) params.sort.forEach((s: any, i: number) => { 
-      q.set(`sort[${i}][field]`, s.field); 
-      q.set(`sort[${i}][direction]`, s.direction || 'asc'); 
-    });
-    if (params.offset) q.set('offset', params.offset);
-    return fetchJson(`${encodeURIComponent(table)}?${q.toString()}`);
-  },
-  create: (table: string, fields: any) => fetchJson(encodeURIComponent(table), { 
-    method: 'POST', 
-    body: JSON.stringify({ fields }) 
-  }),
-  update: (table: string, id: string, fields: any) => fetchJson(`${encodeURIComponent(table)}/${id}`, { 
-    method: 'PATCH', 
-    body: JSON.stringify({ fields }) 
-  }),
-  findOne: (table: string, formula: string) => fetchJson(`${encodeURIComponent(table)}?filterByFormula=${encodeURIComponent(formula)}&pageSize=1`)
-    .then((d: any) => d?.records?.[0]),
-  getById: (table: string, id: string) => fetchJson(`${encodeURIComponent(table)}/${id}`),
-};
-
 export const airtableClient = new AirtableClient();
+export { airtableCreate };
 export type { AirtableRecord, AirtableResponse, ListParams };

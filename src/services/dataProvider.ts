@@ -1,5 +1,5 @@
 import { Mentor, AgendamentoInput, DataProvider, Grupo, CreateGrupoInput } from '@/types/mentor';
-import { airtableClient, createRecord } from './airtableClient';
+import { airtableClient, airtableCreate } from './airtableClient';
 
 const USERS_TABLE = import.meta.env.VITE_AIRTABLE_USERS || 'Users';
 const SESSOES_TABLE = import.meta.env.VITE_AIRTABLE_SESSOES || 'Sessoes';
@@ -219,7 +219,7 @@ class AirtableProvider implements DataProvider {
   }
 
   async createGrupo(input: CreateGrupoInput, currentUserAirRecId: string): Promise<{ ok: boolean; id?: string }> {
-    const response = await createRecord(GRUPOS_TABLE, {
+    const response = await airtableCreate(GRUPOS_TABLE, {
       nome: input.nome,
       ...(input.descricao ? { descricao: input.descricao } : {}),
       owner_user: [currentUserAirRecId], // recXXXX do usuário logado
