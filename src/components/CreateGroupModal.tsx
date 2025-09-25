@@ -29,7 +29,7 @@ interface FormData {
   descricao: string;
 }
 
-const dataProvider = getDataProvider('mock');
+const dataProvider = getDataProvider();
 
 export function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModalProps) {
   const { user } = useAuth();

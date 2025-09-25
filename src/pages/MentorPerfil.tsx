@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getDataProvider } from '@/services/dataProvider';
 import { Mentor } from '@/types/mentor';
 
-const dataProvider = getDataProvider('mock');
+const dataProvider = getDataProvider();
 
 export default function MentorPerfil() {
   const { id } = useParams<{ id: string }>();

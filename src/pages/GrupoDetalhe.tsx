@@ -15,7 +15,7 @@ import { Grupo } from '@/types/mentor';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const dataProvider = getDataProvider('mock');
+const dataProvider = getDataProvider();
 
 export default function GrupoDetalhe() {
   const { id } = useParams<{ id: string }>();

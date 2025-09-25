@@ -90,15 +90,6 @@ export function MentorCard({ mentor, onAgendar }: MentorCardProps) {
           </p>
         )}
 
-        {/* Avaliação mockada */}
-        <div className="flex items-center justify-center gap-1 text-sm">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 fill-accent text-accent" />
-            <span className="font-medium">4.8</span>
-          </div>
-          <span className="text-muted-foreground">(23 avaliações)</span>
-        </div>
-
         {/* Botões de ação */}
         <div className="flex flex-col gap-2 pt-2">
           <Button asChild variant="outline" size="sm" className="w-full">

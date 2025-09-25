@@ -18,7 +18,7 @@ export interface AgendamentoInput {
 }
 
 export interface Grupo {
-  id: string;              // record_id (Airtable) ou mock
+  id: string;              // record_id (Airtable)
   nome: string;
   descricao?: string;
   owner_user_id: string;   // record_id do usuário

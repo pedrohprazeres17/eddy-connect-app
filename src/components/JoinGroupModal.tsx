@@ -23,7 +23,7 @@ interface JoinGroupModalProps {
   onClose: () => void;
 }
 
-const dataProvider = getDataProvider('mock');
+const dataProvider = getDataProvider();
 
 export function JoinGroupModal({ isOpen, onClose }: JoinGroupModalProps) {
   const { user } = useAuth();

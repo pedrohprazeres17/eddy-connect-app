@@ -51,21 +51,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Carregar dados do localStorage na inicialização
+  // Carregar dados do localStorage na inicialização com validação Airtable
   useEffect(() => {
-    const storedAuth = localStorage.getItem(STORAGE_KEY);
-    if (storedAuth) {
-      try {
-        const { user: storedUser, token: storedToken }: StoredAuth = JSON.parse(storedAuth);
-        setUser(storedUser);
-        setToken(storedToken);
-      } catch (error) {
-        console.error('Erro ao carregar dados de autenticação:', error);
-        localStorage.removeItem(STORAGE_KEY);
+    const initializeAuth = async () => {
+      // Limpeza de dados mock/seed antigos
+      const keysToRemove = Object.keys(localStorage).filter(key => 
+        key.startsWith('demo_user') || 
+        key.startsWith('seed_data') || 
+        key.startsWith('mock_')
+      );
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      const storedAuth = localStorage.getItem(STORAGE_KEY);
+      if (storedAuth) {
+        try {
+          const { user: storedUser, token: storedToken }: StoredAuth = JSON.parse(storedAuth);
+          
+          // Validar se o usuário ainda existe no Airtable
+          try {
+            const userExists = await airtableClient.findOne(
+              USERS_TABLE, 
+              `OR({record_id} = '${storedUser.record_id}', RECORD_ID() = '${storedUser.id}')`
+            );
+            
+            if (userExists) {
+              setUser(storedUser);
+              setToken(storedToken);
+            } else {
+              // Usuário não existe mais, fazer logout
+              localStorage.removeItem(STORAGE_KEY);
+              toast({
+                title: "Sessão expirada",
+                description: "Sua conta não foi encontrada. Faça login novamente.",
+                variant: "destructive",
+              });
+            }
+          } catch (validationError) {
+            console.error('Erro ao validar usuário:', validationError);
+            // Em caso de erro na validação, manter o usuário logado mas avisar
+            setUser(storedUser);
+            setToken(storedToken);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados de autenticação:', error);
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
-    }
-    setLoading(false);
-  }, []);
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, [toast]);
 
   // Salvar no localStorage quando o estado mudar
   const saveToStorage = (userData: User, tokenData: string) => {

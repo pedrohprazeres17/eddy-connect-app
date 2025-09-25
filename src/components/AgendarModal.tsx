@@ -42,7 +42,7 @@ const DURACOES = [
   { value: '90', label: '1h 30min' },
 ];
 
-const dataProvider = getDataProvider('mock');
+const dataProvider = getDataProvider();
 
 export function AgendarModal({ isOpen, onClose, mentor }: AgendarModalProps) {
   const { user } = useAuth();

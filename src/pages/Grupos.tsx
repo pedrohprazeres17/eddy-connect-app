@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getDataProvider } from '@/services/dataProvider';
 import { Grupo } from '@/types/mentor';
 
-const dataProvider = getDataProvider('mock');
+const dataProvider = getDataProvider();
 
 // Hook para debounce
 function useDebounce<T>(value: T, delay: number): T {
