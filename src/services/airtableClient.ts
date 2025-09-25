@@ -1,5 +1,5 @@
-const API_KEY = import.meta.env.VITE_AIRTABLE_API_KEY;
-const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
+const API_KEY = 'patOG8iFGozLSo1Vl.96e0eb1c3dd3f3542b49643170a055fac6db7bad4395df52fd77c79d30b464c5';
+const BASE_ID = 'app4aOF3YJSjHNERF';
 const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}`;
 
 interface AirtableRecord {

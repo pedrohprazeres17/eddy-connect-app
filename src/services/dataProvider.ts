@@ -505,19 +505,138 @@ class MockProvider implements DataProvider {
   }
 }
 
-/*
-TODO: Implementação Airtable (ativar quando necessário)
-
+// Implementação Airtable 
 import { airtableClient } from './airtableClient';
 
-const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
-const API_KEY = import.meta.env.VITE_AIRTABLE_API_KEY;
-const USERS_TABLE = import.meta.env.VITE_AIRTABLE_USERS || 'Users';
-const SESSOES_TABLE = import.meta.env.VITE_AIRTABLE_SESSOES || 'Sessoes';
-const GRUPOS_TABLE = import.meta.env.VITE_AIRTABLE_GRUPOS || 'Grupos';
+const BASE_ID = 'app4aOF3YJSjHNERF';
+const API_KEY = 'patOG8iFGozLSo1Vl.96e0eb1c3dd3f3542b49643170a055fac6db7bad4395df52fd77c79d30b464c5';
+const USERS_TABLE = 'Users';
+const SESSOES_TABLE = 'Sessoes';
+const GRUPOS_TABLE = 'Grupos';
 
 class AirtableProvider implements DataProvider {
-  // ... métodos de mentores já implementados ...
+  async listMentores(params: {
+    q?: string;
+    areas?: string[];
+    precoMin?: number;
+    precoMax?: number;
+    order?: 'preco_asc' | 'preco_desc';
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ items: Mentor[]; total: number }> {
+    const {
+      q = '',
+      areas = [],
+      precoMin,
+      precoMax,
+      order,
+      page = 1,
+      pageSize = 12
+    } = params;
+
+    let filters: string[] = ['role = "mentor"'];
+
+    // Filtro por busca (nome ou bio)
+    if (q.trim()) {
+      const searchTerm = q.toLowerCase();
+      filters.push(`FIND('${searchTerm}', LOWER({nome} & ' ' & IF({bio}, {bio}, '')))`);
+    }
+
+    // Filtro por áreas
+    if (areas.length > 0) {
+      const areaFilters = areas.map(area => `FIND('${area}', ARRAYJOIN({areas}, ','))`);
+      filters.push(`OR(${areaFilters.join(', ')})`);
+    }
+
+    // Filtro por preço
+    if (precoMin !== undefined) {
+      filters.push(`{preco_hora} >= ${precoMin}`);
+    }
+    if (precoMax !== undefined) {
+      filters.push(`{preco_hora} <= ${precoMax}`);
+    }
+
+    const filterByFormula = `AND(${filters.join(', ')})`;
+
+    // Ordenação
+    const sort = order === 'preco_asc' 
+      ? [{ field: 'preco_hora', direction: 'asc' as const }]
+      : order === 'preco_desc'
+      ? [{ field: 'preco_hora', direction: 'desc' as const }]
+      : [{ field: 'nome', direction: 'asc' as const }];
+
+    try {
+      const response = await airtableClient.list(USERS_TABLE, {
+        filterByFormula,
+        sort,
+        pageSize,
+      });
+
+      const items: Mentor[] = response.records.map(record => ({
+        id: record.fields.record_id || record.id,
+        nome: record.fields.nome,
+        foto_url: record.fields.foto_url,
+        areas: record.fields.areas || [],
+        preco_hora: record.fields.preco_hora,
+        bio: record.fields.bio,
+      }));
+
+      return { items, total: items.length };
+
+    } catch (error) {
+      console.error('Erro ao buscar mentores:', error);
+      throw error;
+    }
+  }
+
+  async getMentorById(id: string): Promise<Mentor | null> {
+    try {
+      const response = await airtableClient.findByFilter(
+        USERS_TABLE,
+        `AND(role = "mentor", OR({record_id} = '${id}', RECORD_ID() = '${id}'))`
+      );
+
+      if (response.length === 0) return null;
+
+      const record = response[0];
+      return {
+        id: record.fields.record_id || record.id,
+        nome: record.fields.nome,
+        foto_url: record.fields.foto_url,
+        areas: record.fields.areas || [],
+        preco_hora: record.fields.preco_hora,
+        bio: record.fields.bio,
+      };
+
+    } catch (error) {
+      console.error('Erro ao buscar mentor:', error);
+      return null;
+    }
+  }
+
+  async createSessao(input: AgendamentoInput): Promise<{ ok: boolean; id?: string }> {
+    try {
+      const sessaoData = {
+        mentor: [input.mentorId],
+        aluno: [input.alunoId],
+        inicio: input.inicio,
+        fim: input.fim,
+        status: 'solicitada',
+        observacoes: input.observacoes || '',
+      };
+
+      const response = await airtableClient.create(SESSOES_TABLE, sessaoData);
+      
+      return { 
+        ok: true, 
+        id: response.fields.record_id || response.id 
+      };
+
+    } catch (error) {
+      console.error('Erro ao criar sessão:', error);
+      return { ok: false };
+    }
+  }
 
   async listGrupos(params?: { 
     q?: string; 
@@ -545,15 +664,14 @@ class AirtableProvider implements DataProvider {
         filterByFormula,
         sort: [{ field: 'criado_em', direction: 'desc' }],
         pageSize,
-        // TODO: Implementar offset real baseado na página
       });
 
       const items: Grupo[] = response.records.map(record => ({
         id: record.fields.record_id || record.id,
         nome: record.fields.nome,
         descricao: record.fields.descricao,
-        owner_user_id: record.fields.owner_user?.[0] || '', // Link field retorna array
-        membros: record.fields.membros || [], // Link field retorna array de IDs
+        owner_user_id: record.fields.owner_user?.[0] || '',
+        membros: record.fields.membros || [],
         criado_em: record.fields.criado_em,
       }));
 
@@ -570,8 +688,8 @@ class AirtableProvider implements DataProvider {
       const grupoData = {
         nome: input.nome.trim(),
         descricao: input.descricao?.trim() || '',
-        owner_user: [ownerUserId], // Link field expects array
-        membros: [ownerUserId],    // Link field expects array
+        owner_user: [ownerUserId],
+        membros: [ownerUserId],
       };
 
       const response = await airtableClient.create(GRUPOS_TABLE, grupoData);
@@ -589,7 +707,6 @@ class AirtableProvider implements DataProvider {
 
   async entrarNoGrupo(input: EnterGrupoInput, userId: string): Promise<{ ok: boolean }> {
     try {
-      // 1. Buscar o grupo atual
       const grupos = await airtableClient.findByFilter(
         GRUPOS_TABLE,
         `OR({record_id} = '${input.grupoId}', RECORD_ID() = '${input.grupoId}')`
@@ -602,15 +719,13 @@ class AirtableProvider implements DataProvider {
       const grupo = grupos[0];
       const membrosAtuais = grupo.fields.membros || [];
 
-      // 2. Verificar se já é membro
       if (membrosAtuais.includes(userId)) {
-        return { ok: true }; // Já é membro
+        return { ok: true };
       }
 
-      // 3. Adicionar como membro
       const novosMembros = [...membrosAtuais, userId];
 
-      await airtableClient.update(grupo.id, {
+      await airtableClient.update(GRUPOS_TABLE, grupo.id, {
         membros: novosMembros
       });
 
@@ -647,19 +762,16 @@ class AirtableProvider implements DataProvider {
     }
   }
 }
-*/
 
 // Factory function
-export function getDataProvider(mode: 'mock' | 'airtable' = 'mock'): DataProvider {
+export function getDataProvider(mode: 'mock' | 'airtable' = 'airtable'): DataProvider {
   switch (mode) {
     case 'mock':
       return new MockProvider();
     case 'airtable':
-      // TODO: Descomentar quando implementar AirtableProvider
-      // return new AirtableProvider();
-      throw new Error('AirtableProvider não implementado ainda. Use mode="mock".');
+      return new AirtableProvider();
     default:
-      return new MockProvider();
+      return new AirtableProvider();
   }
 }
 
