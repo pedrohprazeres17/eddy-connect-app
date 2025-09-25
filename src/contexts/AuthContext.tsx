@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { airtableClient, createRecord } from '@/services/airtableClient';
 import { sha256, verifyPassword } from '@/utils/crypto';
 import { useToast } from '@/hooks/use-toast';
+import { safeStorage } from '@/utils/safeStorage';
 
 interface User {
   airRecId: string;        // ID REAL do Airtable (recXXXX) — usar em links!
@@ -79,16 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     keysToRemove.forEach(key => localStorage.removeItem(key));
 
-    const storedAuth = localStorage.getItem(STORAGE_KEY);
+    const storedAuth = safeStorage.get<StoredAuth>(STORAGE_KEY);
     if (storedAuth) {
-      try {
-        const { user: storedUser, token: storedToken }: StoredAuth = JSON.parse(storedAuth);
-        setUser(storedUser);
-        setToken(storedToken);
-      } catch (error) {
-        console.error('Erro ao carregar dados de autenticação:', error);
-        localStorage.removeItem(STORAGE_KEY);
-      }
+      setUser(storedAuth.user);
+      setToken(storedAuth.token);
     }
     setLoading(false);
   }, []);
@@ -96,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Salvar no localStorage quando o estado mudar
   const saveToStorage = (userData: User, tokenData: string) => {
     const authData: StoredAuth = { user: userData, token: tokenData };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(authData));
+    safeStorage.set(STORAGE_KEY, authData);
   };
 
   const login = async (email: string, password: string) => {
@@ -129,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(user);
       setToken('local');
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: 'local' }));
+      saveToStorage(user, 'local');
       
       navigate(user.role === 'aluno' ? '/home-aluno' : '/home-mentor');
 
@@ -203,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem(STORAGE_KEY);
+    safeStorage.del(STORAGE_KEY);
     
     toast({
       title: "Logout realizado",

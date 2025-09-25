@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import BootGuard from "@/components/BootGuard";
+import DebugOverlay from "@/components/DebugOverlay";
 
 // Pages
 import Login from "./pages/Login";
@@ -20,12 +22,14 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+  <BootGuard>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <DebugOverlay />
+          <BrowserRouter>
           <Routes>
             {/* Rota raiz redireciona baseado na autenticação */}
             <Route 
@@ -109,6 +113,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </BootGuard>
 );
 
 // Componente helper para redirecionar baseado no role

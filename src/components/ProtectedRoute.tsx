@@ -25,8 +25,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   // Redirecionar para login se não estiver autenticado
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!user && location.pathname !== '/login') {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   // Verificar se o role é o requerido (se especificado)
