@@ -27,6 +27,15 @@ class AirtableClient {
     'Content-Type': 'application/json',
   };
 
+  // Helper para JSON seguro
+  private async safeJson(response: Response): Promise<any> {
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
   private async request<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${BASE_URL}${url}`, {
       ...options,
@@ -37,8 +46,9 @@ class AirtableClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(error.error?.message || error.error || 'Erro na requisição');
+      const error = await this.safeJson(response);
+      console.error('Airtable error:', error || response.statusText);
+      throw new Error(error?.error?.message || 'Falha na operação. Tente novamente.');
     }
 
     return response.json();
@@ -66,12 +76,21 @@ class AirtableClient {
   }
 
   async create(table: string, fields: Record<string, any>): Promise<AirtableRecord> {
-    const response = await this.request<{ records: AirtableRecord[] }>(`/${table}`, {
+    const url = `/${encodeURIComponent(table)}`;
+    const response = await fetch(`${BASE_URL}${url}`, {
       method: 'POST',
+      headers: this.headers,
       body: JSON.stringify({ fields }),
     });
-    
-    return response.records[0];
+
+    if (!response.ok) {
+      const error = await this.safeJson(response);
+      console.error('Airtable create error:', error || response.statusText);
+      throw new Error(error?.error?.message || 'Falha ao criar registro');
+    }
+
+    // RESPONSE SHAPE: { id: 'rec...', fields: {...}, createdTime: '...' }
+    return response.json(); // <-- um único record, NÃO {records:[...]}
   }
 
   async update(table: string, id: string, fields: Record<string, any>): Promise<AirtableRecord> {

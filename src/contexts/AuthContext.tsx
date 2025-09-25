@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { airtableClient } from '@/services/airtableClient';
 import { sha256, verifyPassword } from '@/utils/crypto';
 import { useToast } from '@/hooks/use-toast';
@@ -45,16 +46,21 @@ interface StoredAuth {
   token: string;
 }
 
+// Helper para converter qualquer coisa para string
+function asString(x: any): string {
+  return typeof x === 'string' ? x : Array.isArray(x) ? String(x[0] ?? '') : x ? String(x) : '';
+}
+
 // Função para mapear usuário do Airtable
 function mapUser(rec: any): User {
-  const f = rec.fields;
+  const f = rec?.fields ?? {};
   return {
-    airRecId: rec.id,           // ID REAL do Airtable (recXXXX) — usar em links!
-    record_id: f.record_id,     // opcional, só exibição
-    email: f.email,
-    nome: f.nome,
-    role: f.role,
-    foto_url: f.foto_url ?? null,
+    airRecId: rec?.id,                    // recXXXX — usar para links
+    record_id: asString(f.record_id),     // opcional (fórmula)
+    email: asString(f.email),
+    nome: asString(f.nome),
+    role: asString(f.role) as 'aluno' | 'mentor',  // Single select -> string
+    foto_url: asString(f.foto_url) || null,
     areas: f.areas || [],
     preco_hora: f.preco_hora,
     bio: f.bio,
@@ -66,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Carregar dados do localStorage na inicialização com validação Airtable
   useEffect(() => {
@@ -125,101 +132,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(authData));
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, senha: string) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Buscar usuário por email (case insensitive)
       const emailLc = email.trim().toLowerCase();
       const rec = await airtableClient.findOne(USERS_TABLE, `LOWER({email})='${emailLc}'`);
       
-      if (!rec) {
-        throw new Error('E-mail não encontrado');
-      }
-
-      // Verificar senha
-      const ok = (await sha256(password)) === rec.fields.password_hash;
-      if (!ok) {
-        throw new Error('Senha incorreta');
-      }
-
-      // Mapear usuário
-      const user = mapUser(rec);
+      if (!rec) throw new Error('E-mail não encontrado');
       
-      // Gerar token simples
-      const authToken = 'local';
-
+      const ok = (await sha256(senha)) === (rec.fields?.password_hash ?? '');
+      if (!ok) throw new Error('Senha incorreta');
+      
+      const user = mapUser(rec);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: 'local' }));
       setUser(user);
-      setToken(authToken);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: authToken }));
+      setToken('local');
 
       toast({
         title: "Login realizado com sucesso!",
         description: `Bem-vindo, ${user.nome}!`,
       });
 
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro no login';
-      console.error('Airtable login error:', message);
+      // Navegação por role
+      navigate(user.role === 'aluno' ? '/home-aluno' : '/home-mentor');
+
+    } catch (e: any) {
+      console.error('Login error:', e);
       toast({
         title: "Erro no login",
-        description: message,
+        description: e?.message || 'Não foi possível entrar.',
         variant: "destructive",
       });
-      throw error;
+      throw e;
     } finally {
       setLoading(false);
     }
   };
 
   const signup = async (payload: SignupData) => {
+    setLoading(true);
     try {
-      setLoading(true);
-
       const emailLc = payload.email.trim().toLowerCase();
-      const exists = await airtableClient.findOne(USERS_TABLE, `LOWER({email})='${emailLc}'`);
-      
-      if (exists) {
-        throw new Error('E-mail já cadastrado');
-      }
+      // Bloqueia duplicidade
+      const dup = await airtableClient.findOne(USERS_TABLE, `LOWER({email})='${emailLc}'`);
+      if (dup) throw new Error('E-mail já cadastrado');
 
       const password_hash = await sha256(payload.password);
-      const fields: any = { 
-        email: payload.email, 
-        email_lc: emailLc, 
-        password_hash, 
-        role: payload.role, 
-        nome: payload.nome 
+      const fields: any = {
+        email: payload.email,
+        email_lc: emailLc,      // se existir na base
+        password_hash,
+        role: payload.role,
+        nome: payload.nome,
       };
-
+      
       if (payload.role === 'mentor') {
         if (payload.areas?.length) fields.areas = payload.areas;
-        if (payload.preco_hora) fields.preco_hora = Number(payload.preco_hora);
+        if (payload.preco_hora != null) fields.preco_hora = Number(payload.preco_hora);
         if (payload.bio) fields.bio = payload.bio;
         if (payload.foto_url) fields.foto_url = payload.foto_url;
       }
 
-      const created = await airtableClient.create(USERS_TABLE, fields);
-      const user = mapUser(created); // created já retorna rec.id
-      
+      const created = await airtableClient.create(USERS_TABLE, fields);  // <- 1 record
+      const user = mapUser(created);                                     // <- mapeia direto
+
+      if (!user?.airRecId) throw new Error('Usuário criado, mas sem id válido');
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: 'local' }));
       setUser(user);
       setToken('local');
-
+      
       toast({
         title: "Conta criada! Você já está logado.",
         description: `Bem-vindo, ${user.nome}!`,
       });
 
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro no cadastro';
-      console.error('Airtable signup error:', message);
+      // Navegação por role
+      navigate(user.role === 'aluno' ? '/home-aluno' : '/home-mentor');
+
+    } catch (e: any) {
+      console.error('Signup/auto-login error:', e);
       toast({
         title: "Erro no cadastro",
-        description: message,
+        description: e?.message || 'Não foi possível criar sua conta.',
         variant: "destructive",
       });
-      throw error;
+      throw e;
     } finally {
       setLoading(false);
     }
