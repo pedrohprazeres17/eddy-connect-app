@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { airtableClient } from '@/services/airtableClient';
+import { useNavigate } from 'react-router-dom';
+import { airtableClient, createRecord } from '@/services/airtableClient';
 import { sha256, verifyPassword } from '@/utils/crypto';
 import { useToast } from '@/hooks/use-toast';
 
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Carregar dados do localStorage na inicialização com validação Airtable
@@ -138,29 +140,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Verificar senha
-      const ok = (await sha256(password)) === rec.fields.password_hash;
+      const ok = (await sha256(password)) === (rec.fields?.password_hash ?? '');
       if (!ok) {
         throw new Error('Senha incorreta');
       }
 
       // Mapear usuário
-      const user = mapUser(rec);
-      
-      // Gerar token simples
-      const authToken = 'local';
+      const user = {
+        airRecId: rec.id,
+        record_id: rec.fields?.record_id,
+        email: rec.fields?.email,
+        nome: rec.fields?.nome,
+        role: rec.fields?.role,
+        foto_url: rec.fields?.foto_url ?? null,
+      };
 
       setUser(user);
-      setToken(authToken);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: authToken }));
-
-      toast({
-        title: "Login realizado com sucesso!",
-        description: `Bem-vindo, ${user.nome}!`,
-      });
+      setToken('local');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: 'local' }));
+      
+      navigate(user.role === 'aluno' ? '/home-aluno' : '/home-mentor');
 
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro no login';
-      console.error('Airtable login error:', message);
+      const message = error instanceof Error ? error.message : 'Não foi possível entrar.';
+      console.error('Login error:', error);
       toast({
         title: "Erro no login",
         description: message,
@@ -177,43 +180,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
 
       const emailLc = payload.email.trim().toLowerCase();
-      const exists = await airtableClient.findOne(USERS_TABLE, `LOWER({email})='${emailLc}'`);
       
-      if (exists) {
-        throw new Error('E-mail já cadastrado');
-      }
+      // 1) bloquear duplicidade por e-mail
+      const dup = await airtableClient.findOne(USERS_TABLE, `LOWER({email})='${emailLc}'`);
+      if (dup) throw new Error('E-mail já cadastrado');
 
+      // 2) montar campos
       const password_hash = await sha256(payload.password);
-      const fields: any = { 
-        email: payload.email, 
-        email_lc: emailLc, 
-        password_hash, 
-        role: payload.role, 
-        nome: payload.nome 
+      const fields: any = {
+        email: payload.email,
+        email_lc: emailLc, // se existir na base
+        password_hash,
+        role: payload.role,
+        nome: payload.nome,
       };
-
+      
       if (payload.role === 'mentor') {
         if (payload.areas?.length) fields.areas = payload.areas;
-        if (payload.preco_hora) fields.preco_hora = Number(payload.preco_hora);
+        if (payload.preco_hora != null) fields.preco_hora = Number(payload.preco_hora);
         if (payload.bio) fields.bio = payload.bio;
         if (payload.foto_url) fields.foto_url = payload.foto_url;
       }
 
-      const created = await airtableClient.create(USERS_TABLE, fields);
-      const user = mapUser(created); // created já retorna rec.id
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, token: 'local' }));
-      setUser(user);
-      setToken('local');
+      // 3) criar no Airtable (retorna um record)
+      const created = await createRecord(USERS_TABLE, fields);
+      if (!created?.id) throw new Error('Usuário criado sem ID válido');
 
+      // 4) sucesso: mensagem e redirect para login (SEM auto-login)
       toast({
-        title: "Conta criada! Você já está logado.",
-        description: `Bem-vindo, ${user.nome}!`,
+        title: "Cadastro realizado com sucesso! Faça login para continuar.",
+        description: "Sua conta foi criada. Use suas credenciais para acessar.",
       });
+      
+      navigate('/login');
 
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro no cadastro';
-      console.error('Airtable signup error:', message);
+      const message = error instanceof Error ? error.message : 'Não foi possível concluir o cadastro.';
+      console.error('Signup error:', error);
       toast({
         title: "Erro no cadastro",
         description: message,

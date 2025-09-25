@@ -115,8 +115,8 @@ class AirtableClient {
   }
 }
 
-// Helper único para criação no Airtable
-async function airtableCreate(table: string, fields: any) {
+// Helper único para criação no Airtable - retorna um único record
+export async function createRecord(table: string, fields: any) {
   const r = await fetch(`${BASE_URL}/${encodeURIComponent(table)}`, {
     method: 'POST',
     headers: {
@@ -138,5 +138,4 @@ async function airtableCreate(table: string, fields: any) {
 }
 
 export const airtableClient = new AirtableClient();
-export { airtableCreate };
 export type { AirtableRecord, AirtableResponse, ListParams };
