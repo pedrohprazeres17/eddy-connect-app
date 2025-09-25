@@ -131,7 +131,7 @@ export default function HomeAluno() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full" disabled>
+                <Button asChild variant="outline" className="w-full">
                   <Link to="/grupos">
                     Ver Grupos
                   </Link>

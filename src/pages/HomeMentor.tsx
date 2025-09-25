@@ -161,7 +161,7 @@ export default function HomeMentor() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full" disabled>
+                <Button asChild variant="outline" className="w-full">
                   <Link to="/grupos">
                     Gerenciar Grupos
                   </Link>

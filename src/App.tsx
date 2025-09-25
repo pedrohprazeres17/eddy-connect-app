@@ -13,6 +13,7 @@ import HomeMentor from "./pages/HomeMentor";
 import Mentores from "./pages/Mentores";
 import MentorPerfil from "./pages/MentorPerfil";
 import Grupos from "./pages/Grupos";
+import GrupoDetalhe from "./pages/GrupoDetalhe";
 import Sessoes from "./pages/Sessoes";
 import NotFound from "./pages/NotFound";
 
@@ -93,6 +94,15 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Grupos />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/grupo/:id" 
+              element={
+                <ProtectedRoute>
+                  <GrupoDetalhe />
                 </ProtectedRoute>
               } 
             />

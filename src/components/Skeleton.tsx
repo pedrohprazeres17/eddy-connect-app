@@ -119,3 +119,88 @@ export function MentorPerfilSkeleton() {
     </div>
   );
 }
+
+export function GroupCardSkeleton() {
+  return (
+    <div className="gradient-surface rounded-lg p-4 shadow-card h-full flex flex-col">
+      <div className="flex items-start justify-between mb-3">
+        <Skeleton variant="text" className="w-32 h-6 flex-1 mr-2" />
+        <Skeleton className="w-12 h-5 rounded-full" />
+      </div>
+      
+      <div className="flex-1 space-y-3">
+        <Skeleton variant="text" className="w-full" />
+        <Skeleton variant="text" className="w-3/4" />
+        
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-4 h-4" />
+            <Skeleton variant="text" className="w-20 h-4" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-4 h-4" />
+            <Skeleton variant="text" className="w-24 h-4" />
+          </div>
+        </div>
+        
+        <div className="pt-2">
+          <Skeleton variant="button" className="w-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function GroupDetailSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* Header Skeleton */}
+      <div className="gradient-surface rounded-xl p-6 shadow-card">
+        <div className="flex items-start justify-between mb-4">
+          <Skeleton variant="text" className="w-64 h-8" />
+          <Skeleton className="w-16 h-6 rounded-full" />
+        </div>
+        <Skeleton variant="text" className="w-full mb-2" />
+        <Skeleton variant="text" className="w-2/3 mb-4" />
+        
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-4 h-4" />
+            <Skeleton variant="text" className="w-20 h-4" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-4 h-4" />
+            <Skeleton variant="text" className="w-24 h-4" />
+          </div>
+        </div>
+        
+        <div className="flex gap-3">
+          <Skeleton variant="button" className="w-32" />
+          <Skeleton variant="button" className="w-28" />
+        </div>
+      </div>
+
+      {/* Chat Skeleton */}
+      <div className="gradient-surface rounded-xl p-6 shadow-card">
+        <Skeleton variant="text" className="w-32 h-6 mb-4" />
+        <div className="h-80 space-y-3 p-4 rounded-lg bg-muted/20">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className={`flex ${index % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+              <div className="max-w-[70%] space-y-1">
+                <Skeleton variant="text" className="w-32 h-4" />
+                <Skeleton variant="text" className="w-24 h-3" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 space-y-3">
+          <Skeleton className="w-full h-20" />
+          <div className="flex justify-between">
+            <Skeleton variant="button" className="w-24" />
+            <Skeleton variant="button" className="w-20" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

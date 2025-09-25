@@ -1,4 +1,4 @@
-import { Mentor, AgendamentoInput, DataProvider } from '@/types/mentor';
+import { Mentor, AgendamentoInput, DataProvider, Grupo, CreateGrupoInput, EnterGrupoInput } from '@/types/mentor';
 
 // Mock data - 30 mentores para testes
 const MOCK_MENTORES: Mentor[] = [
@@ -230,6 +230,106 @@ const MOCK_MENTORES: Mentor[] = [
   }
 ];
 
+// Mock data - 12 grupos para testes
+const MOCK_GRUPOS: Grupo[] = [
+  {
+    id: 'grupo-1',
+    nome: 'React Avançado',
+    descricao: 'Grupo para discussões sobre React, hooks avançados, performance e patterns.',
+    owner_user_id: 'mentor-1',
+    membros: ['mentor-1', 'aluno-1', 'aluno-2', 'mentor-3'],
+    criado_em: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: 'grupo-2',
+    nome: 'Data Science Brasil',
+    descricao: 'Comunidade brasileira de ciência de dados. Compartilhamos projetos, dicas e networking.',
+    owner_user_id: 'mentor-4',
+    membros: ['mentor-4', 'mentor-9', 'aluno-3', 'aluno-4', 'aluno-5'],
+    criado_em: '2024-01-20T14:30:00Z'
+  },
+  {
+    id: 'grupo-3',
+    nome: 'DevOps na Prática',
+    descricao: 'Discussões sobre infraestrutura, CI/CD, containers e boas práticas DevOps.',
+    owner_user_id: 'mentor-6',
+    membros: ['mentor-6', 'mentor-10', 'aluno-6'],
+    criado_em: '2024-02-01T09:15:00Z'
+  },
+  {
+    id: 'grupo-4',
+    nome: 'UX/UI Design',
+    descricao: 'Grupo para designers e desenvolvedores interessados em experiência do usuário.',
+    owner_user_id: 'mentor-3',
+    membros: ['mentor-3', 'mentor-11', 'aluno-7', 'aluno-8'],
+    criado_em: '2024-02-05T16:45:00Z'
+  },
+  {
+    id: 'grupo-5',
+    nome: 'JavaScript Moderno',
+    descricao: 'ES6+, TypeScript, Node.js e as últimas novidades do ecossistema JavaScript.',
+    owner_user_id: 'mentor-8',
+    membros: ['mentor-8', 'mentor-12', 'aluno-9', 'aluno-10', 'aluno-11'],
+    criado_em: '2024-02-10T11:20:00Z'
+  },
+  {
+    id: 'grupo-6',
+    nome: 'Inglês Tech',
+    descricao: 'Praticando inglês técnico para desenvolvedores. Conversação e vocabulário específico.',
+    owner_user_id: 'mentor-7',
+    membros: ['mentor-7', 'mentor-15', 'aluno-12', 'aluno-13'],
+    criado_em: '2024-02-15T08:00:00Z'
+  },
+  {
+    id: 'grupo-7',
+    nome: 'Machine Learning',
+    descricao: 'Estudos sobre algoritmos de ML, deep learning e aplicações práticas.',
+    owner_user_id: 'mentor-13',
+    membros: ['mentor-13', 'mentor-22', 'aluno-14'],
+    criado_em: '2024-02-20T13:30:00Z'
+  },
+  {
+    id: 'grupo-8',
+    nome: 'Backend Architecture',
+    descricao: 'Discussões sobre arquitetura de software, microserviços e escalabilidade.',
+    owner_user_id: 'mentor-14',
+    membros: ['mentor-14', 'mentor-20', 'mentor-24', 'aluno-15', 'aluno-16'],
+    criado_em: '2024-02-25T15:00:00Z'
+  },
+  {
+    id: 'grupo-9',
+    nome: 'Carreira em Tech',
+    descricao: 'Dicas de carreira, processos seletivos, networking e crescimento profissional.',
+    owner_user_id: 'mentor-16',
+    membros: ['mentor-16', 'aluno-17', 'aluno-18', 'aluno-19'],
+    criado_em: '2024-03-01T10:45:00Z'
+  },
+  {
+    id: 'grupo-10',
+    nome: 'Cloud Computing',
+    descricao: 'AWS, Azure, GCP e tecnologias de nuvem. Certificações e boas práticas.',
+    owner_user_id: 'mentor-18',
+    membros: ['mentor-18', 'mentor-28', 'aluno-20'],
+    criado_em: '2024-03-05T12:00:00Z'
+  },
+  {
+    id: 'grupo-11',
+    nome: 'Full Stack Journey',
+    descricao: 'Para quem está aprendendo desenvolvimento full stack. Frontend, backend e tudo entre eles.',
+    owner_user_id: 'mentor-26',
+    membros: ['mentor-26', 'aluno-21', 'aluno-22', 'aluno-23'],
+    criado_em: '2024-03-10T14:15:00Z'
+  },
+  {
+    id: 'grupo-12',
+    nome: 'Startups & Tech',
+    descricao: 'Discussões sobre tecnologia em startups, produto, growth e empreendedorismo.',
+    owner_user_id: 'mentor-25',
+    membros: ['mentor-25', 'mentor-26', 'aluno-24', 'aluno-25'],
+    criado_em: '2024-03-15T16:30:00Z'
+  }
+];
+
 // Mock Provider Implementation
 class MockProvider implements DataProvider {
   private delay(ms: number = 800): Promise<void> {
@@ -317,9 +417,95 @@ class MockProvider implements DataProvider {
       id: `sessao-${Date.now()}` 
     };
   }
+
+  async listGrupos(params?: { 
+    q?: string; 
+    page?: number; 
+    pageSize?: number 
+  }): Promise<{ items: Grupo[]; total: number }> {
+    await this.delay(600);
+
+    const {
+      q = '',
+      page = 1,
+      pageSize = 12
+    } = params || {};
+
+    let filtered = [...MOCK_GRUPOS];
+
+    // Filtro por busca (nome ou descrição)
+    if (q.trim()) {
+      const searchTerm = q.toLowerCase().trim();
+      filtered = filtered.filter(grupo =>
+        grupo.nome.toLowerCase().includes(searchTerm) ||
+        (grupo.descricao?.toLowerCase().includes(searchTerm) ?? false)
+      );
+    }
+
+    // Ordenar por data de criação (mais recentes primeiro)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.criado_em || 0).getTime();
+      const dateB = new Date(b.criado_em || 0).getTime();
+      return dateB - dateA;
+    });
+
+    const total = filtered.length;
+    const startIndex = (page - 1) * pageSize;
+    const items = filtered.slice(startIndex, startIndex + pageSize);
+
+    return { items, total };
+  }
+
+  async createGrupo(input: CreateGrupoInput, ownerUserId: string): Promise<{ ok: boolean; id?: string }> {
+    await this.delay(800);
+
+    const novoGrupo: Grupo = {
+      id: `grupo-${Date.now()}`,
+      nome: input.nome.trim(),
+      descricao: input.descricao?.trim(),
+      owner_user_id: ownerUserId,
+      membros: [ownerUserId], // Owner é automaticamente membro
+      criado_em: new Date().toISOString()
+    };
+
+    // Adicionar ao mock (simular persistência)
+    MOCK_GRUPOS.unshift(novoGrupo);
+
+    console.log('Mock: Grupo criado:', novoGrupo);
+    return { 
+      ok: true, 
+      id: novoGrupo.id 
+    };
+  }
+
+  async entrarNoGrupo(input: EnterGrupoInput, userId: string): Promise<{ ok: boolean }> {
+    await this.delay(600);
+
+    const grupo = MOCK_GRUPOS.find(g => g.id === input.grupoId);
+    
+    if (!grupo) {
+      throw new Error('Grupo não encontrado');
+    }
+
+    // Verificar se já é membro
+    if (grupo.membros.includes(userId)) {
+      return { ok: true }; // Já é membro, retorna sucesso
+    }
+
+    // Adicionar como membro
+    grupo.membros.push(userId);
+
+    console.log('Mock: Usuário entrou no grupo:', { grupoId: input.grupoId, userId });
+    return { ok: true };
+  }
+
+  async getGrupoById(id: string): Promise<Grupo | null> {
+    await this.delay(400);
+    return MOCK_GRUPOS.find(grupo => grupo.id === id) || null;
+  }
 }
 
-/* 
+/*
 TODO: Implementação Airtable (ativar quando necessário)
 
 import { airtableClient } from './airtableClient';
@@ -328,88 +514,119 @@ const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
 const API_KEY = import.meta.env.VITE_AIRTABLE_API_KEY;
 const USERS_TABLE = import.meta.env.VITE_AIRTABLE_USERS || 'Users';
 const SESSOES_TABLE = import.meta.env.VITE_AIRTABLE_SESSOES || 'Sessoes';
+const GRUPOS_TABLE = import.meta.env.VITE_AIRTABLE_GRUPOS || 'Grupos';
 
 class AirtableProvider implements DataProvider {
-  async listMentores(params: {
-    q?: string;
-    areas?: string[];
-    precoMin?: number;
-    precoMax?: number;
-    order?: 'preco_asc' | 'preco_desc';
-    page?: number;
-    pageSize?: number;
-  }): Promise<{ items: Mentor[]; total: number }> {
+  // ... métodos de mentores já implementados ...
+
+  async listGrupos(params?: { 
+    q?: string; 
+    page?: number; 
+    pageSize?: number 
+  }): Promise<{ items: Grupo[]; total: number }> {
     const {
       q,
-      areas = [],
-      precoMin,
-      precoMax,
-      order,
       page = 1,
       pageSize = 12
-    } = params;
+    } = params || {};
 
     // Construir filterByFormula
-    let filters: string[] = ["{role} = 'mentor'"];
+    let filters: string[] = [];
     
     if (q?.trim()) {
       const searchTerm = q.toLowerCase();
-      filters.push(`FIND('${searchTerm}', LOWER({nome} & ' ' & IF({bio}, {bio}, '')))`);
+      filters.push(`FIND('${searchTerm}', LOWER({nome} & ' ' & IF({descricao}, {descricao}, '')))`);
     }
 
-    if (areas.length > 0) {
-      const areaFilters = areas.map(area => `FIND('${area}', ARRAYJOIN({areas}, ','))`);
-      filters.push(`OR(${areaFilters.join(', ')})`);
-    }
-
-    if (precoMin !== undefined) {
-      filters.push(`{preco_hora} >= ${precoMin}`);
-    }
-
-    if (precoMax !== undefined) {
-      filters.push(`{preco_hora} <= ${precoMax}`);
-    }
-
-    const filterByFormula = filters.length > 1 ? `AND(${filters.join(', ')})` : filters[0];
-
-    // Construir sort
-    const sort = order === 'preco_asc' 
-      ? [{ field: 'preco_hora', direction: 'asc' as const }]
-      : order === 'preco_desc'
-      ? [{ field: 'preco_hora', direction: 'desc' as const }]
-      : [{ field: 'nome', direction: 'asc' as const }];
+    const filterByFormula = filters.length > 0 ? filters.join(' AND ') : undefined;
 
     try {
-      const response = await airtableClient.list(USERS_TABLE, {
+      const response = await airtableClient.list(GRUPOS_TABLE, {
         filterByFormula,
-        sort,
+        sort: [{ field: 'criado_em', direction: 'desc' }],
         pageSize,
         // TODO: Implementar offset real baseado na página
       });
 
-      const items: Mentor[] = response.records.map(record => ({
+      const items: Grupo[] = response.records.map(record => ({
         id: record.fields.record_id || record.id,
         nome: record.fields.nome,
-        foto_url: record.fields.foto_url,
-        areas: record.fields.areas || [],
-        preco_hora: record.fields.preco_hora,
-        bio: record.fields.bio,
+        descricao: record.fields.descricao,
+        owner_user_id: record.fields.owner_user?.[0] || '', // Link field retorna array
+        membros: record.fields.membros || [], // Link field retorna array de IDs
+        criado_em: record.fields.criado_em,
       }));
 
-      // TODO: Para paginação real, precisaríamos de multiple requests ou usar getAllRecords
       return { items, total: items.length };
 
     } catch (error) {
-      console.error('Erro ao buscar mentores:', error);
+      console.error('Erro ao buscar grupos:', error);
       throw error;
     }
   }
 
-  async getMentorById(id: string): Promise<Mentor | null> {
+  async createGrupo(input: CreateGrupoInput, ownerUserId: string): Promise<{ ok: boolean; id?: string }> {
+    try {
+      const grupoData = {
+        nome: input.nome.trim(),
+        descricao: input.descricao?.trim() || '',
+        owner_user: [ownerUserId], // Link field expects array
+        membros: [ownerUserId],    // Link field expects array
+      };
+
+      const response = await airtableClient.create(GRUPOS_TABLE, grupoData);
+      
+      return { 
+        ok: true, 
+        id: response.fields.record_id || response.id 
+      };
+
+    } catch (error) {
+      console.error('Erro ao criar grupo:', error);
+      return { ok: false };
+    }
+  }
+
+  async entrarNoGrupo(input: EnterGrupoInput, userId: string): Promise<{ ok: boolean }> {
+    try {
+      // 1. Buscar o grupo atual
+      const grupos = await airtableClient.findByFilter(
+        GRUPOS_TABLE,
+        `OR({record_id} = '${input.grupoId}', RECORD_ID() = '${input.grupoId}')`
+      );
+
+      if (grupos.length === 0) {
+        throw new Error('Grupo não encontrado');
+      }
+
+      const grupo = grupos[0];
+      const membrosAtuais = grupo.fields.membros || [];
+
+      // 2. Verificar se já é membro
+      if (membrosAtuais.includes(userId)) {
+        return { ok: true }; // Já é membro
+      }
+
+      // 3. Adicionar como membro
+      const novosMembros = [...membrosAtuais, userId];
+
+      await airtableClient.update(grupo.id, {
+        membros: novosMembros
+      });
+
+      return { ok: true };
+
+    } catch (error) {
+      console.error('Erro ao entrar no grupo:', error);
+      return { ok: false };
+    }
+  }
+
+  async getGrupoById(id: string): Promise<Grupo | null> {
     try {
       const response = await airtableClient.findByFilter(
-        USERS_TABLE,
-        `AND({role} = 'mentor', OR({record_id} = '${id}', RECORD_ID() = '${id}'))`
+        GRUPOS_TABLE,
+        `OR({record_id} = '${id}', RECORD_ID() = '${id}')`
       );
 
       if (response.length === 0) return null;
@@ -418,39 +635,15 @@ class AirtableProvider implements DataProvider {
       return {
         id: record.fields.record_id || record.id,
         nome: record.fields.nome,
-        foto_url: record.fields.foto_url,
-        areas: record.fields.areas || [],
-        preco_hora: record.fields.preco_hora,
-        bio: record.fields.bio,
+        descricao: record.fields.descricao,
+        owner_user_id: record.fields.owner_user?.[0] || '',
+        membros: record.fields.membros || [],
+        criado_em: record.fields.criado_em,
       };
 
     } catch (error) {
-      console.error('Erro ao buscar mentor:', error);
+      console.error('Erro ao buscar grupo:', error);
       return null;
-    }
-  }
-
-  async createSessao(input: AgendamentoInput): Promise<{ ok: boolean; id?: string }> {
-    try {
-      const sessaoData = {
-        mentor: [input.mentorId], // Link field expects array of record IDs
-        aluno: [input.alunoId],   // Link field expects array of record IDs
-        inicio: input.inicio,     // ISO string -> DateTime
-        fim: input.fim,          // ISO string -> DateTime
-        status: 'solicitada',
-        observacoes: input.observacoes || '',
-      };
-
-      const response = await airtableClient.create(SESSOES_TABLE, sessaoData);
-      
-      return { 
-        ok: true, 
-        id: response.fields.record_id || response.id 
-      };
-
-    } catch (error) {
-      console.error('Erro ao criar sessão:', error);
-      return { ok: false };
     }
   }
 }
