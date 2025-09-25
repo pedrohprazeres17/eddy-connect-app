@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import HomeAluno from "./pages/HomeAluno";
 import HomeMentor from "./pages/HomeMentor";
 import Mentores from "./pages/Mentores";
+import MentorPerfil from "./pages/MentorPerfil";
 import Grupos from "./pages/Grupos";
 import Sessoes from "./pages/Sessoes";
 import NotFound from "./pages/NotFound";
@@ -74,6 +75,15 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Mentores />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/mentor/:id" 
+              element={
+                <ProtectedRoute>
+                  <MentorPerfil />
                 </ProtectedRoute>
               } 
             />

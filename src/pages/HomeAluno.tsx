@@ -111,7 +111,7 @@ export default function HomeAluno() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full" disabled>
+                <Button asChild variant="outline" className="w-full">
                   <Link to="/mentores">
                     Explorar Mentores
                   </Link>
@@ -165,7 +165,7 @@ export default function HomeAluno() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold">Mentores em destaque</h2>
-            <Button asChild variant="ghost" disabled>
+            <Button asChild variant="ghost">
               <Link to="/mentores">
                 Ver todos
               </Link>
