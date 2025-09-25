@@ -131,34 +131,34 @@ class AirtableProvider implements DataProvider {
 
   async listGrupos(params?: { 
     q?: string; 
-    page?: number; 
-    pageSize?: number 
-  }): Promise<{ items: Grupo[]; total: number }> {
+    pageSize?: number; 
+    offset?: string;
+  }): Promise<{ items: Grupo[]; total: number; offset?: string }> {
     const {
       q,
-      page = 1,
-      pageSize = 12
+      pageSize = 20,
+      offset
     } = params || {};
 
-    // Construir filterByFormula
-    let filters: string[] = [];
+    // Construir filterByFormula para busca
+    let filterByFormula: string | undefined;
     
     if (q?.trim()) {
-      const searchTerm = q.toLowerCase();
-      filters.push(`FIND('${searchTerm}', LOWER({nome} & ' ' & IF({descricao}, {descricao}, '')))`);
+      const searchTerm = q.toLowerCase().replace(/'/g, "\\'"); // Escape aspas
+      filterByFormula = `FIND('${searchTerm}', LOWER({nome} & ' ' & IF({descricao}, {descricao}, '')))`;
     }
-
-    const filterByFormula = filters.length > 0 ? filters.join(' AND ') : undefined;
 
     try {
       const response = await airtableClient.list(GRUPOS_TABLE, {
         filterByFormula,
         sort: [{ field: 'nome', direction: 'asc' }],
         pageSize,
+        offset,
       });
 
       const items: Grupo[] = response.records.map(record => ({
         id: record.fields.record_id || record.id,
+        airtable_id: record.id, // ID interno do Airtable para operações
         nome: record.fields.nome,
         descricao: record.fields.descricao,
         owner_user_id: record.fields.owner_user?.[0] || '',
@@ -166,7 +166,11 @@ class AirtableProvider implements DataProvider {
         criado_em: record.fields.criado_em,
       }));
 
-      return { items, total: items.length };
+      return { 
+        items, 
+        total: items.length,
+        offset: response.offset 
+      };
 
     } catch (error) {
       console.error('Erro ao buscar grupos:', error);
@@ -181,6 +185,7 @@ class AirtableProvider implements DataProvider {
         descricao: input.descricao?.trim() || '',
         owner_user: [ownerUserId],
         membros: [ownerUserId],
+        criado_em: new Date().toISOString(),
       };
 
       const response = await airtableClient.create(GRUPOS_TABLE, grupoData);
@@ -194,6 +199,50 @@ class AirtableProvider implements DataProvider {
       console.error('Erro ao criar grupo:', error);
       return { ok: false };
     }
+  }
+
+  async entrarNoGrupo(grupoAirtableId: string, currentUserRecId: string): Promise<{ ok: boolean }> {
+    try {
+      // 1. Obter grupo atual para ler membros
+      const grupoRecord = await airtableClient.getByRecordId(GRUPOS_TABLE, grupoAirtableId);
+      
+      if (!grupoRecord) {
+        throw new Error('Grupo não encontrado');
+      }
+
+      const membrosAtuais = grupoRecord.fields.membros || [];
+
+      // 2. Verificar se já é membro
+      if (membrosAtuais.includes(currentUserRecId)) {
+        return { ok: true }; // Já é membro
+      }
+
+      // 3. Adicionar usuário aos membros
+      const novosMembros = [...new Set([...membrosAtuais, currentUserRecId])];
+
+      await airtableClient.update(GRUPOS_TABLE, grupoRecord.id, {
+        membros: novosMembros
+      });
+
+      return { ok: true };
+
+    } catch (error) {
+      console.error('Erro ao entrar no grupo:', error);
+      return { ok: false };
+    }
+  }
+
+  async getMeuMembership(grupo: any, currentUserRecId: string): Promise<{ 
+    isMember: boolean; 
+    isOwner: boolean; 
+  }> {
+    const membros = grupo.membros || [];
+    const owner = grupo.owner_user_id;
+
+    return {
+      isMember: membros.includes(currentUserRecId),
+      isOwner: owner === currentUserRecId
+    };
   }
 
   async getGrupoById(id: string): Promise<Grupo | null> {

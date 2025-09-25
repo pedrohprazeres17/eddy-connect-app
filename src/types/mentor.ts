@@ -19,6 +19,7 @@ export interface AgendamentoInput {
 
 export interface Grupo {
   id: string;              // record_id (Airtable)
+  airtable_id?: string;    // ID interno do Airtable para operações
   nome: string;
   descricao?: string;
   owner_user_id: string;   // record_id do usuário
@@ -48,11 +49,18 @@ export interface DataProvider {
 
   listGrupos(params?: { 
     q?: string; 
-    page?: number; 
-    pageSize?: number 
-  }): Promise<{ items: Grupo[]; total: number }>;
+    pageSize?: number;
+    offset?: string;
+  }): Promise<{ items: Grupo[]; total: number; offset?: string }>;
 
   createGrupo(input: CreateGrupoInput, ownerUserId: string): Promise<{ ok: boolean; id?: string }>;
+
+  entrarNoGrupo(grupoAirtableId: string, currentUserRecId: string): Promise<{ ok: boolean }>;
+
+  getMeuMembership(grupo: any, currentUserRecId: string): Promise<{ 
+    isMember: boolean; 
+    isOwner: boolean; 
+  }>;
 
   getGrupoById(id: string): Promise<Grupo | null>;
 }

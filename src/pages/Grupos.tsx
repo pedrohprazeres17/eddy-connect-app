@@ -35,17 +35,15 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function Grupos() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const pageSize = 12;
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
   // Modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -67,84 +65,102 @@ export default function Grupos() {
   }, [user, navigate, toast]);
 
   // Função para buscar grupos
-  const fetchGrupos = useCallback(async (currentPage: number, resetList: boolean = false) => {
+  const fetchGrupos = useCallback(async (resetList: boolean = false) => {
     if (!user) return;
 
     try {
       if (resetList) {
         setLoading(true);
         setError(null);
-      } else {
-        setLoadingMore(true);
       }
 
-      const params = {
-        q: debouncedSearch.trim() || undefined,
-        page: currentPage,
-        pageSize,
-      };
-
-      const response = await dataProvider.listGrupos(params);
-
-      // Filtrar apenas grupos onde o usuário é membro
-      const gruposDoUsuario = response.items.filter(grupo => 
-        grupo.membros.includes(user.id)
-      );
-
-      if (resetList) {
-        setGrupos(gruposDoUsuario);
-      } else {
-        setGrupos(prev => [...prev, ...gruposDoUsuario]);
-      }
-      
-      setTotal(gruposDoUsuario.length);
-      setPage(currentPage);
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar grupos';
-      setError(errorMessage);
-      toast({
-        title: "Erro ao carregar grupos",
-        description: errorMessage,
-        variant: "destructive",
+      const response = await dataProvider.listGrupos({
+        q: debouncedSearch,
+        pageSize: 50, // Buscar mais grupos por vez
       });
+
+      setGrupos(response.items);
+      setTotal(response.items.length);
+      setError(null);
+
+    } catch (error) {
+      console.error('Erro ao buscar grupos:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar grupos';
+      setError(errorMessage);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [debouncedSearch, user, toast]);
+  }, [user, debouncedSearch]);
 
-  // Buscar grupos quando pesquisa mudar (reset list) 
+  // Carregar grupos quando usuário ou busca mudar
   useEffect(() => {
     if (user) {
-      fetchGrupos(1, true);
+      fetchGrupos(true);
     }
-  }, [fetchGrupos, user]);
-
-  // Handler para carregar mais
-  const handleLoadMore = () => {
-    if (!loadingMore && grupos.length < total) {
-      fetchGrupos(page + 1, false);
-    }
-  };
+  }, [user, debouncedSearch, fetchGrupos]);
 
   // Handler para retry em caso de erro
   const handleRetry = () => {
-    setError(null);
-    fetchGrupos(1, true);
+    fetchGrupos(true);
   };
 
-  // Handler para sucesso na criação de grupo
+  // Handler para sucesso na criação
   const handleCreateSuccess = () => {
-    fetchGrupos(1, true); // Recarregar lista
+    // Recarregar a lista de grupos
+    fetchGrupos(true);
+    
+    toast({
+      title: "Grupo criado com sucesso!",
+      description: "Você já é membro do novo grupo.",
+    });
   };
 
-  const hasMoreItems = grupos.length < total;
-  const showEmptyState = !loading && grupos.length === 0 && !error;
+  // Handler para abrir grupo
+  const handleAbrirGrupo = useCallback((grupoId: string) => {
+    navigate(`/grupo/${grupoId}`);
+  }, [navigate]);
 
-  if (!user) {
-    return null; // Já redireciona no useEffect
-  }
+  // Handler para entrar em grupo
+  const handleEntrarGrupo = useCallback(async (grupoAirtableId: string) => {
+    if (!user) {
+      toast({
+        title: "Faça login para entrar no grupo",
+        description: "Você precisa estar logado para participar de grupos.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setJoiningGroupId(grupoAirtableId);
+      
+      const result = await dataProvider.entrarNoGrupo(grupoAirtableId, user.record_id);
+      
+      if (result.ok) {
+        toast({
+          title: "Você entrou no grupo!",
+          description: "Agora você pode participar das discussões e atividades.",
+        });
+        
+        // Recarregar a lista para atualizar os estados
+        fetchGrupos(true);
+      } else {
+        throw new Error('Falha ao entrar no grupo');
+      }
+    } catch (error) {
+      console.error('Erro ao entrar no grupo:', error);
+      toast({
+        title: "Erro ao entrar no grupo",
+        description: "Não foi possível entrar no grupo. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setJoiningGroupId(null);
+    }
+  }, [user, dataProvider, toast, navigate, fetchGrupos]);
+
+  const showEmptyState = !loading && grupos.length === 0 && !error;
 
   return (
     <AppShell>
@@ -155,23 +171,23 @@ export default function Grupos() {
             Grupos de Estudo
           </h1>
           <p className="text-lg text-muted-foreground">
-            Participe de discussões e aprenda colaborativamente
+            Conecte-se com outros estudantes e aprenda em grupo
           </p>
         </div>
 
         {/* Barra de ações */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Busca */}
-            <div className="relative flex-1">
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            {/* Campo de busca */}
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                type="text"
-                placeholder="Buscar grupos por nome ou descrição..."
+                type="search"
+                placeholder="Buscar grupos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
-                aria-label="Buscar grupos"
+                aria-label="Buscar grupos de estudo"
               />
             </div>
 
@@ -181,6 +197,7 @@ export default function Grupos() {
                 onClick={() => setCreateModalOpen(true)}
                 className="gap-2"
                 variant="hero"
+                disabled={!user}
               >
                 <Plus className="w-4 h-4" />
                 Criar Grupo
@@ -194,22 +211,16 @@ export default function Grupos() {
           {/* Contador de resultados */}
           {!loading && !error && (
             <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {total === 0 
-                    ? "Você ainda não participa de nenhum grupo"
-                    : `${total} grupo${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}${
-                        debouncedSearch 
-                          ? ' com os filtros aplicados'
-                          : ''
-                      }`
-                  }
-                </p>
-              
-              {grupos.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Mostrando {grupos.length} de {total}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">
+                {total === 0 
+                  ? "Nenhum grupo encontrado"
+                  : `${total} grupo${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}${
+                      debouncedSearch 
+                        ? ' com os filtros aplicados'
+                        : ''
+                    }`
+                }
+              </p>
             </div>
           )}
 
@@ -240,51 +251,37 @@ export default function Grupos() {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
               aria-label="Carregando grupos..."
             >
-              {Array.from({ length: pageSize }).map((_, index) => (
+              {Array.from({ length: 8 }).map((_, index) => (
                 <GroupCardSkeleton key={index} />
               ))}
             </div>
           ) : grupos.length > 0 ? (
-            <>
-              <div 
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                role="grid"
-                aria-label="Lista de grupos de estudo"
-              >
-                {grupos.map((grupo) => (
+            <div 
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              role="grid"
+              aria-label="Lista de grupos de estudo"
+            >
+              {grupos.map((grupo) => {
+                if (!user) return null;
+                
+                const isOwner = grupo.owner_user_id === user.record_id;
+                const isMember = grupo.membros.includes(user.record_id);
+                const isJoining = joiningGroupId === (grupo.airtable_id || grupo.id);
+                
+                return (
                   <div key={grupo.id} role="gridcell">
-                    <GroupCard grupo={grupo} />
+                    <GroupCard 
+                      grupo={grupo}
+                      isOwner={isOwner}
+                      isMember={isMember}
+                      onAbrir={handleAbrirGrupo}
+                      onEntrar={handleEntrarGrupo}
+                      isJoining={isJoining}
+                    />
                   </div>
-                ))}
-              </div>
-
-              {/* Botão Carregar Mais */}
-              {hasMoreItems && (
-                <div className="text-center">
-                  <Button
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    variant="outline"
-                    size="lg"
-                    className="min-w-48"
-                  >
-                    {loadingMore ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Carregando...
-                      </>
-                    ) : (
-                      <>
-                        Carregar mais grupos
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          ({grupos.length}/{total})
-                        </span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </>
+                );
+              })}
+            </div>
           ) : showEmptyState ? (
             <Card className="gradient-surface shadow-card">
               <CardContent className="text-center py-12">
@@ -292,35 +289,53 @@ export default function Grupos() {
                 <h3 className="text-xl font-semibold mb-2">
                   {debouncedSearch 
                     ? "Nenhum grupo encontrado"
-                    : "Você ainda não participa de nenhum grupo"
+                    : "Ainda não há grupos cadastrados"
                   }
                 </h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   {debouncedSearch
-                    ? "Não encontramos grupos com os termos buscados. Tente ajustar sua pesquisa."
-                    : "Você ainda não participa de nenhum grupo. Crie um grupo para iniciar."
+                    ? "Não encontramos grupos com os termos buscados. Tente ajustar sua pesquisa ou criar um novo grupo."
+                    : "Seja o primeiro a criar um grupo de estudos na plataforma!"
                   }
                 </p>
 
-                {!debouncedSearch ? (
-                  <div className="flex justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {user ? (
                     <Button 
                       onClick={() => setCreateModalOpen(true)}
                       className="gap-2"
                       variant="hero"
                     >
                       <Plus className="w-4 h-4" />
-                      Criar Grupo
+                      Criar Primeiro Grupo
                     </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    Limpar busca
-                  </Button>
-                )}
+                  ) : (
+                    <Button 
+                      onClick={() => {
+                        toast({
+                          title: "Faça login para criar um grupo",
+                          description: "Você precisa estar logado para criar grupos de estudo.",
+                          variant: "destructive",
+                        });
+                        navigate('/login');
+                      }}
+                      className="gap-2"
+                      variant="hero"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Fazer Login para Criar
+                    </Button>
+                  )}
+                  
+                  {debouncedSearch && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      Limpar busca
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : null}
