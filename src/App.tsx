@@ -30,21 +30,7 @@ const App = () => (
             {/* Rota raiz redireciona baseado na autenticação */}
             <Route 
               path="/" 
-              element={
-                <ProtectedRoute>
-                  <Navigate to="/dashboard" replace />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Redireciona para a página apropriada baseada no role */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <RoleBasedRedirect />
-                </ProtectedRoute>
-              } 
+              element={<RoleBasedRedirect />} 
             />
 
             {/* Página de login */}
