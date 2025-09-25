@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { airtableClient, createRecord } from '@/services/airtableClient';
 import { sha256, verifyPassword } from '@/utils/crypto';
 import { useToast } from '@/hooks/use-toast';
 import { safeStorage } from '@/utils/safeStorage';
+import { useAppNavigation } from '@/contexts/NavigationContext';
 
 interface User {
   airRecId: string;        // ID REAL do Airtable (recXXXX) — usar em links!
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const { navigate, isReady: navigationReady } = useAppNavigation();
   const { toast } = useToast();
 
   // Carregar dados do localStorage na inicialização (sem validação assíncrona)
@@ -126,10 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken('local');
       saveToStorage(user, 'local');
       
-      // Evitar redirect recursivo - só redirecionar se não estouver já na rota de destino
-      const targetPath = user.role === 'aluno' ? '/home-aluno' : '/home-mentor';
-      if (window.location.pathname !== targetPath) {
-        navigate(targetPath);
+      // Evitar redirect recursivo - só redirecionar se navegação estiver pronta e não estiver já na rota de destino
+      if (navigationReady) {
+        const targetPath = user.role === 'aluno' ? '/home-aluno' : '/home-mentor';
+        if (window.location.pathname !== targetPath) {
+          navigate(targetPath);
+        }
       }
 
     } catch (error) {
@@ -183,8 +185,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Faça login para continuar.",
       });
       
-      // Navegar para login sem auto-login
-      navigate('/login');
+      // Navegar para login sem auto-login (só se navegação estiver pronta)
+      if (navigationReady) {
+        navigate('/login');
+      }
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível concluir o cadastro.';
