@@ -112,6 +112,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Erro ao carregar dados de autenticação:', error);
           localStorage.removeItem(STORAGE_KEY);
         }
+      } else {
+        // AUTO-LOGIN para demonstração
+        try {
+          const emailLc = 'pedro1@gmail.com';
+          const password = 'Senha123';
+          
+          const rec = await airtableClient.findOne(USERS_TABLE, `LOWER({email})='${emailLc}'`);
+          
+          if (rec) {
+            const ok = (await sha256(password)) === rec.fields.password_hash;
+            if (ok) {
+              const autoUser = mapUser(rec);
+              const authToken = 'local';
+              
+              setUser(autoUser);
+              setToken(authToken);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: autoUser, token: authToken }));
+            }
+          }
+        } catch (error) {
+          console.error('Auto-login falhou:', error);
+        }
       }
       setLoading(false);
     };
